@@ -1,5 +1,6 @@
 #include "prototypes.h" // include our headers file where we store function prototypes
 // import standard I/O library
+#include <stdbool.h> // C doesn't have a builtin bool type, in standard C bool is provided only if we include this
 #include <stdio.h>
 
 /*
@@ -40,6 +41,28 @@ int main() {
   // run the function that shows how void works
   iDoNothing();
 
+  // brackets are mandatory
+  if (x > 15) {
+    printf("we shoudn't hit this\n");
+  } else if (x == 10) {
+    printf("this is it\n");
+  } else {
+    printf("other cases\n");
+  }
+
+  // turnary operator (conditional)
+  char *turnaryResult = x == 9 ? "t" : "f";
+  // x is not equal to 9 so we should get the "falsey" value here
+  printf("%s\n", turnaryResult);
+
+  // %zu used for printing 'sizeof' results
+  printf("sizeof(char) = %zu\n", sizeof(char));
+  printf("sizeof(int) = %zu\n", sizeof(int));
+  printf("sizeof(float) = %zu\n", sizeof(float));
+  printf("sizeof(double) = %zu\n", sizeof(double));
+  printf("sizeof(size_t) = %zu\n", sizeof(size_t));
+  printf("sizeof(bool) = %zu\n", sizeof(bool));
+
   return 0;
 }
 
@@ -58,5 +81,5 @@ int helloWorld(void) {
 // void in C is the absence of value
 void iDoNothing(void) {
   printf("func that takes no values and returns no values to provide an "
-         "example for void");
+         "example for void\n\n");
 }
