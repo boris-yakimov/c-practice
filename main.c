@@ -28,7 +28,6 @@ int main() {
 
   // const int x = 5;
   // x = 10; // will give a complier error because we cannot change a constant
-
   int x = 5;
   x = 10; // this however will work because it is a var
 
@@ -36,6 +35,8 @@ int main() {
       add(7, 36); // this will be a compiler error that add is not defined
                   // unless we create a function prortype before the main()
                   // function, because our add function is declared after main
+                  // in our case we declare it in the prototypes.h file that is
+                  // getting imported
   printf("%f\n", result);
 
   // run the function that shows how void works
@@ -50,7 +51,7 @@ int main() {
     printf("other cases\n");
   }
 
-  // turnary operator (conditional)
+  // turnary operator (conditional) - similar to count in tf
   char *turnaryResult = x == 9 ? "t" : "f";
   // x is not equal to 9 so we should get the "falsey" value here
   printf("%s\n", turnaryResult);
@@ -62,6 +63,16 @@ int main() {
   printf("sizeof(double) = %zu\n", sizeof(double));
   printf("sizeof(size_t) = %zu\n", sizeof(size_t));
   printf("sizeof(bool) = %zu\n", sizeof(bool));
+
+  // for loops test
+  printf("for loop tests\n");
+  printNumbers(3);
+  printNumbers(-2);
+  printNumbers(0);
+
+  // for while loop test
+  printf("while loop test\n");
+  printNumbersInReverse(10, 2);
 
   return 0;
 }
@@ -82,4 +93,20 @@ int helloWorld(void) {
 void iDoNothing(void) {
   printf("func that takes no values and returns no values to provide an "
          "example for void\n\n");
+}
+
+void printNumbers(int x) {
+  // initialization; conditional; final expression (runs after each iteration of
+  // the loop)
+  for (int i = 0; i < x; i++) {
+    printf("%d\n", i);
+  }
+}
+
+void printNumbersInReverse(int start, int end) {
+  int i = start;
+  while (i >= end) {
+    printf("%d\n", i);
+    i--;
+  }
 }
