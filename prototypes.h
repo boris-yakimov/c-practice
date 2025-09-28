@@ -17,3 +17,14 @@ int helloWorld(void);
 
 void printNumbers(int x);
 void printNumbersInReverse(int start, int end);
+
+// struct declaration
+// custom type definition
+typedef struct Coordinate {
+  int x;
+  int y;
+  int z;
+} coordinate_t;
+
+// test for a struct that has a custom typedef
+coordinate_t updateCoordinate(coordinate_t coord, int factor);

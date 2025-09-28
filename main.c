@@ -74,6 +74,39 @@ int main() {
   printf("while loop test\n");
   printNumbersInReverse(10, 2);
 
+  // zero value initializer
+  struct Coordinate zeroValueStructTest = {0};
+  printf("print zero value initialized struct: %d %d %d\n",
+         zeroValueStructTest.x, zeroValueStructTest.y, zeroValueStructTest.z);
+
+  // poistional initialization
+  struct Coordinate positionalValueStructTest = {
+      32,
+      45,
+      55,
+  };
+  printf("print positional value initialized struct: %d %d %d\n",
+         positionalValueStructTest.x, positionalValueStructTest.y,
+         positionalValueStructTest.z);
+
+  // designated initializion
+  struct Coordinate designatedStructTest = {
+      .x = 56,
+      .y = 89,
+      .z = 102,
+  };
+  printf("print designated value initialized struct: %d %d %d\n",
+         designatedStructTest.x, designatedStructTest.y,
+         designatedStructTest.z);
+
+  // create a custom typedef for our strcut and test using it as a function
+  // argument, return value, etc
+  coordinate_t testForTypeDef = {.x = 105, .y = 205, .z = 305};
+  coordinate_t scaledCoord = updateCoordinate(testForTypeDef, 405);
+  printf("this ia test for a custom typedef on a struct, updated values are %d "
+         "%d %d\n",
+         scaledCoord.x, scaledCoord.y, scaledCoord.z);
+
   return 0;
 }
 
@@ -109,4 +142,28 @@ void printNumbersInReverse(int start, int end) {
     printf("%d\n", i);
     i--;
   }
+}
+
+// we cannot return multiple values from a function in C, so this will give an
+// error
+//
+// int, char * become_older(int age, char *name) {
+//   return age + 1, name;
+// }
+//
+// we can however return structs that can have many fields
+struct Coordinate newCoordinate(int x, int y, int z) {
+  struct Coordinate coord = {.x = x, .y = y, .z = z};
+
+  return coord;
+}
+
+// use the custom type definition we added to our struct
+coordinate_t updateCoordinate(coordinate_t coord, int factor) {
+  coordinate_t scaled = coord;
+  scaled.x *= factor;
+  scaled.y *= factor;
+  scaled.z *= factor;
+
+  return scaled;
 }
