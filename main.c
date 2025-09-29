@@ -1,6 +1,8 @@
 #include "prototypes.h" // include our headers file where we store function prototypes
 // import standard I/O library
 #include <stdbool.h> // C doesn't have a builtin bool type, in standard C bool is provided only if we include this
+// to print offset and padding during struct memory layout examples
+#include <stddef.h>
 #include <stdio.h>
 
 /*
@@ -106,6 +108,18 @@ int main() {
   printf("this ia test for a custom typedef on a struct, updated values are %d "
          "%d %d\n",
          scaledCoord.x, scaledCoord.y, scaledCoord.z);
+
+  // sizeof can also be used on custom types
+  printf("size of our custom type coordinate_t is %zu bytes\n",
+         sizeof(coordinate_t));
+
+  // see how a struct gets padding for some of its fields that make it have a
+  // non-muliplicative alignment
+  printf("sizeof(human_t) = %zu\n", sizeof(human_t));
+  printf("offsetof(human_t, first_initial) = %zu\n",
+         offsetof(human_t, first_initial));
+  printf("offsetof(human_t, age) = %zu\n", offsetof(human_t, age));
+  printf("offsetof(human_t, height) = %zu\n", offsetof(human_t, height));
 
   return 0;
 }

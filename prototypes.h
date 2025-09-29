@@ -28,3 +28,10 @@ typedef struct Coordinate {
 
 // test for a struct that has a custom typedef
 coordinate_t updateCoordinate(coordinate_t coord, int factor);
+
+// tests to understand struct memory layout and padding
+typedef struct Human {
+  char first_initial; // 1 byte
+  int age;            // 4 bytes (on most systems)
+  double height;      // 8 bytes (on most systems)
+} human_t;
