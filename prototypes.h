@@ -29,6 +29,12 @@ typedef struct Coordinate {
 // test for a struct that has a custom typedef
 coordinate_t updateCoordinate(coordinate_t coord, int factor);
 
+// test to update struct fields via their pointer
+coordinate_t updateCoordinateNewX(coordinate_t *coord, int new_x);
+// the same but just update the value via the pointer wihtout the function
+// returning anything
+void updateCoordinateNewZ(coordinate_t *coord, int new_z);
+
 // tests to understand struct memory layout and padding
 typedef struct Human {
   char first_initial; // 1 byte

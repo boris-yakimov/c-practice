@@ -121,6 +121,44 @@ int main() {
   printf("offsetof(human_t, age) = %zu\n", offsetof(human_t, age));
   printf("offsetof(human_t, height) = %zu\n", offsetof(human_t, height));
 
+  // print address in memory of a var via pointer
+  printf("The memory address of age is: %p\n", &age);
+  // update struct field via its pointer
+  coordinate_t pointerTest = {10, 20, 30};
+  printf("x before update via pointer is: %d\n", pointerTest.x);
+  coordinate_t updatedViaPointer = updateCoordinateNewX(&pointerTest, 42);
+  printf("updated x via its pointer: %d\n", updatedViaPointer.x);
+  // update struct field via its pointer, but via a function that doesn't return
+  // anything
+  printf("z before update via pointer is: %d\n", pointerTest.z);
+  updateCoordinateNewZ(&pointerTest, 17);
+  printf("updated z via its pointer from a function that doesn't return "
+         "anything, new value is %d\n",
+         pointerTest.z);
+
+  int yP = 5;       // yP is a normal int with value 5
+  int *pTest = &yP; // &yP gives the address of yP → store it in a pointer pTest
+  int xP = *pTest;  // *pTest dereferences pTest → gives the value at address
+                    // (i.e. xP = 5)
+  printf("pointer test, yP is: %d\n", yP);
+  printf("pointer test, yTest address is: %p\n",
+         pTest); // %p used to print pointer address
+  printf("pointer test, yTest value is: %d\n",
+         *pTest); // %d and than *pTest dereference the pointer to get its value
+  printf("pointer test, xP is: %d\n", xP);
+
+  yP = 10;
+  printf("we've now update yP so print everything again\n");
+  printf("pointer test, yP is: %d\n", yP);
+  printf("pointer test, yTest address is: %p\n",
+         pTest); // %p used to print pointer address
+  printf("pointer test, yTest value is: %d\n",
+         *pTest); // %d and than *pTest dereference the pointer to get its value
+  printf("pointer test, xP is: %d\n",
+         xP); // xP remains 5 because it was previously assign by dereferencing
+              // the pointer pTest which at the time had the value of 5, so when
+              // we update yP, xP doesn't change
+
   return 0;
 }
 
@@ -181,3 +219,13 @@ coordinate_t updateCoordinate(coordinate_t coord, int factor) {
 
   return scaled;
 }
+
+// update a field of struct via its pointer
+coordinate_t updateCoordinateNewX(coordinate_t *coord, int new_x) {
+  coord->x = new_x; // use -> for strcut pointer
+  return *coord;    // return updated struct (by value)
+}
+
+// update a field of a struct via its pointer without the function that does
+// that returning anything
+void updateCoordinateNewZ(coordinate_t *coord, int new_z) { coord->z = new_z; }
