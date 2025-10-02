@@ -159,6 +159,47 @@ int main() {
               // the pointer pTest which at the time had the value of 5, so when
               // we update yP, xP doesn't change
 
+  // arrays
+  int testArray[5] = {1, 2, 3, 4, 5};
+  testArray[1] = 20;
+  testArray[3] = 40;
+  for (int i = 0; i < 5; i++) {
+    printf("%d", testArray[i]);
+  }
+
+  // array and pointers
+  int testNumbers[5] = {1, 2, 3, 4, 5};
+  printf(
+      "\naccessing elements of an array using indexing %d\n", // access element
+                                                              // via index
+      testNumbers[2]);
+  printf("accessing elements using pointers %d\n",
+         *(testNumbers + 2)); // access the same element via pointer
+
+  // pointer arithmetic
+  int *ptrTestForNum = testNumbers;
+  printf("pointer points to testNumbers[0]: %d\n", *ptrTestForNum); // output 1
+  *ptrTestForNum += 2;
+  printf("pointer points to testNumbers[2]: %d\n", *ptrTestForNum); // output 3
+
+  // array of structs
+  coordinate_t pointsArray[3] = {
+      {1, 2, 3},
+      {4, 5, 6},
+      {7, 8, 9},
+  };
+  // print out values using indexing
+  printf(
+      "pointsArray[1].x = %d, pointsArray[1].y = %d, pointsArray[1].z = %d\n",
+      pointsArray[1].x, pointsArray[1].y, pointsArray[1].z);
+  // do the same with pointers
+  coordinate_t *ptrOfPoints = pointsArray;
+  printf(
+      "ptrOfPoints[1].x = %d, ptrOfPoints[1].y = %d, ptrOfPoints[1].z = %d\n",
+      (ptrOfPoints + 1)->x, (ptrOfPoints + 1)->y,
+      (ptrOfPoints + 1)->z); // here we use the -> operator to get the element
+                             // of the struct when using a pointer to the struct
+
   return 0;
 }
 
