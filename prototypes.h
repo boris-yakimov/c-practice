@@ -41,3 +41,6 @@ typedef struct Human {
   int age;            // 4 bytes (on most systems)
   double height;      // 8 bytes (on most systems)
 } human_t;
+
+// test func to show arrays decaying into pointers
+void core_utils_func(int core_utilization[]);

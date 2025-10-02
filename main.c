@@ -200,6 +200,24 @@ int main() {
       (ptrOfPoints + 1)->z); // here we use the -> operator to get the element
                              // of the struct when using a pointer to the struct
 
+  // pointers are the same size no matter what data they point to because they
+  // essentially contain addresses in memory
+  int *intPtr;
+  char *charPtr;
+  double *doublePtr;
+  printf("Size of int pointer: %zu bytes\n", sizeof(intPtr));
+  printf("Size of char pointer: %zu bytes\n", sizeof(charPtr));
+  printf("Size of double pointer: %zu bytes\n", sizeof(doublePtr));
+  // this size depends on the architecture that you run this on - on a 32bit
+  // system those will be 4 bytes each on a 64bit system they will be 8 bytes
+
+  // demonstrate arrays decaying into pointers
+  int core_utilization[] = {43, 67, 89, 92, 71, 43, 56, 12};
+  int len = sizeof(core_utilization) / sizeof(core_utilization[0]);
+  printf("sizeof core_utilization in main: %zu\n", sizeof(core_utilization));
+  printf("len of core_utilization: %d\n", len);
+  core_utils_func(core_utilization);
+
   return 0;
 }
 
@@ -270,3 +288,12 @@ coordinate_t updateCoordinateNewX(coordinate_t *coord, int new_x) {
 // update a field of a struct via its pointer without the function that does
 // that returning anything
 void updateCoordinateNewZ(coordinate_t *coord, int new_z) { coord->z = new_z; }
+
+// test func to show arrays decaying into pointers
+void core_utils_func(
+    int core_utilization[]) { // this is not really an array parameter. The
+                              // compiler treats it as if you had written:
+                              // void core_utils_func(int *core_utilization);
+  printf("sizeof core_utilization in core_utils_func: %zu\n",
+         sizeof(core_utilization));
+}
