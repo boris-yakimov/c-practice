@@ -4,6 +4,8 @@
 // to print offset and padding during struct memory layout examples
 #include <stddef.h>
 #include <stdio.h>
+// to use strcat
+#include <string.h>
 
 /*
 this type of comment is also supported
@@ -217,6 +219,22 @@ int main() {
   printf("sizeof core_utilization in main: %zu\n", sizeof(core_utilization));
   printf("len of core_utilization: %d\n", len);
   core_utils_func(core_utilization);
+
+  // strings in C can be declared either with the array style or with the
+  // pointer style (pointer style is preferred)
+  char testStr1[] = "hello";
+  char *testStr2 = "hello but pointer";
+  printf("testStr1 from array: %s\n", testStr1);
+  printf("testStr2 from pointer: %s\n", testStr2);
+
+  // notice that we can allocate an array that is larger than what we use (the
+  // full size is still allocated and uses memory)
+  char firstStr[50] = "shorter than array size";
+  char *secondStr = " and second string";
+  // strcat uses the null terminator '\0' to determine where to start appending
+  // the secondStr to the firstStr
+  strcat(firstStr, secondStr);
+  printf("the result is %s\n", firstStr);
 
   return 0;
 }
