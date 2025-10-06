@@ -1,3 +1,6 @@
+// included in order to use size_t as a type for field of a struct bellow
+#include <string.h>
+
 // if two files include the same header files C will try to actually declare the
 // functions in the header files twice which will result in an error the
 // solution to this is to add to the top of header files, this is there for the
@@ -44,3 +47,10 @@ typedef struct Human {
 
 // test func to show arrays decaying into pointers
 void core_utils_func(int core_utilization[]);
+
+typedef struct {
+  size_t length;   // number of characters currently in use (not counting '\0')
+  char buffer[64]; // the actual text data, always null-terminated
+} TextBuffer;
+
+int appendTxtToBuffer(TextBuffer *dest, const char *src);

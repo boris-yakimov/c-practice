@@ -236,6 +236,42 @@ int main() {
   strcat(firstStr, secondStr);
   printf("the result is %s\n", firstStr);
 
+  // strcmp
+  char cmpStr1[] = "Hello";
+  char cmpStr2[] = "World";
+  int cmpResult = strcmp(cmpStr1, cmpStr2);
+  printf("result of strcmp: %d\n", cmpResult);
+
+  // some tests for a buffer function that takes the length of the buffer and
+  // its contents
+  // buffer exactly matches the text (full buffer)
+  TextBuffer tb_full = {
+      .length = 63,
+      .buffer = "This buffer is exactly 63 characters long for testing!!"};
+  int res_full = appendTxtToBuffer(
+      &tb_full,
+      "Extra"); // remaining space is 0 so we cannot append this so we fail
+  printf("Full buffer test:\nReturn: %d\nBuffer: '%s'\nLength: %zu\n\n",
+         res_full, tb_full.buffer, tb_full.length);
+
+  // buffer has more space than text (fits easily)
+  TextBuffer tb_roomy = {.length = 12, .buffer = "Hello World"};
+  int res_roomy = appendTxtToBuffer(
+      &tb_roomy,
+      "!"); // there is enough space in the buffer to append this so we succeeed
+  printf("Roomy buffer test:\nReturn: %d\nBuffer: '%s'\nLength: %zu\n\n",
+         res_roomy, tb_roomy.buffer, tb_roomy.length);
+
+  // buffer has some space but not enough for full text (overflow)
+  TextBuffer tb_partial = {
+      .length = 60,
+      .buffer = "This buffer already has 60 chars in it..........."};
+  int res_partial = appendTxtToBuffer(
+      &tb_partial, "ExtraText"); // there is some space but not enough so we
+                                 // truncate a part of the text and fail
+  printf("Partial buffer test:\nReturn: %d\nBuffer: '%s'\nLength: %zu\n\n",
+         res_partial, tb_partial.buffer, tb_partial.length);
+
   return 0;
 }
 
@@ -314,4 +350,49 @@ void core_utils_func(
                               // void core_utils_func(int *core_utilization);
   printf("sizeof core_utilization in core_utils_func: %zu\n",
          sizeof(core_utilization));
+}
+
+int appendTxtToBuffer(TextBuffer *dest, const char *src) {
+  // both src and dest should not be empty
+  if (!dest || !src) {
+    return 1;
+  }
+
+  // get the size of the buffer array inside the TextBuffer struct, in this case
+  // it is 64
+  const int maxBufferSize = sizeof(dest->buffer);
+  size_t lengthOfSrc = strlen(src);
+
+  // calculate remaining space
+  size_t remaining = maxBufferSize - dest->length - 1; // reserve space for '\0'
+
+  if (remaining == 0) {
+    return 1; // no space left
+  }
+
+  // determine how many chars we can append
+  size_t sizeToCopy = (lengthOfSrc < remaining) ? lengthOfSrc : remaining;
+
+  if (lengthOfSrc > remaining) { // src is larger than buffer
+    // not enough room, will truncate the src
+    strncat(dest->buffer, src, sizeToCopy);
+    dest->length += sizeToCopy;
+    dest->buffer[dest->length] = '\0';
+    return 1; // truncated
+  } else if (lengthOfSrc ==
+             remaining) { // src is exactly equal to buffer + null terminator
+    // fits exactly, but leaves no room for future appends → treat as
+    // unsuccessful
+    strncat(dest->buffer, src, sizeToCopy);
+    dest->length += sizeToCopy;
+    dest->buffer[dest->length] = '\0';
+    return 1; // full buffer (unsuccessful)
+  } else {
+    // (lengthOfSrc < remaining)  src is smaller than buffer
+    // fits fully with room to spare
+    strncat(dest->buffer, src, lengthOfSrc);
+    dest->length += sizeToCopy;
+    dest->buffer[dest->length] = '\0';
+    return 0; // success
+  }
 }
