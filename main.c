@@ -1,4 +1,4 @@
-#include "prototypes.h" // include our headers file where we store function prototypes
+#include "prototypes.h" // include my headers file where function prototypes are stored
 // import standard I/O library
 #include <stdbool.h> // C doesn't have a builtin bool type, in standard C bool is provided only if we include this
 // to print offset and padding during struct memory layout examples
@@ -272,6 +272,49 @@ int main() {
   printf("Partial buffer test:\nReturn: %d\nBuffer: '%s'\nLength: %zu\n\n",
          res_partial, tb_partial.buffer, tb_partial.length);
 
+  // enums
+  color_t cEnumTest = GREEN;
+  printf("%d\n", cEnumTest);
+
+  ExitStatus eEnumTest1 = EXIT_COMMAND_NOT_FOUND;
+  printf("%d\n", eEnumTest1);
+
+  IncrementedEnums iEnumTest1 = third;
+  printf("%d\n", iEnumTest1);
+
+  // enum function with switch statements
+  printf("%s\n", http_to_str(400));
+  printf("%s\n", http_to_str(401));
+  printf("%s\n", http_to_str(404));
+  printf("%s\n", http_to_str(418));
+  printf("%s\n", http_to_str(500));
+
+  // since enums are just fancy words assigned to integers we expect their size
+  // to match an integer size (unless we have a very large integer in an enum in
+  // which case the C compiler may convert it to an unsigned int or a long to be
+  // able to fit it
+  printf("size of enum field with standard integer %zu\n",
+         sizeof(EXIT_COMMAND_NOT_FOUND));
+  printf("size of enum field with a very large integer %zu\n",
+         sizeof(EXIT_EXTREMELLY_LARGE_INT));
+  // output is 8 bytes on both !
+  // The compiler chooses an integer type (like `int`, `unsigned int`, `long`,
+  // or `long long`) large enough to hold **the largest enumerator value**.
+  // Therefore  the`sizeof()` result depends on that chosen underlying type.
+  //
+  // That `1236347263412839714` is far larger than what fits in a 32-bit `int`
+  // or even a 32-bit `long`. So the compiler promotes the underlying type to
+  // something that can hold it — typically a **64-bit integer** (like `long
+  // long`).
+  //
+  // Both values are part of the same `enum`, which now uses 64 bits to
+  // represent all of its integer fields. Whereas if we remove the large number
+  // from the enum integers, the highest value in the `enum`list becomes 127
+  // which fits within a regular 32bit `int`
+  //
+  // therefore the test with smaller integers enum are 4 bytes each and in the
+  // second one they are 8 bytes each.
+
   return 0;
 }
 
@@ -394,5 +437,20 @@ int appendTxtToBuffer(TextBuffer *dest, const char *src) {
     dest->length += sizeToCopy;
     dest->buffer[dest->length] = '\0';
     return 0; // success
+  }
+}
+
+char *http_to_str(http_error_code_t code) {
+  switch (code) {
+  case 400:
+    return "400 Bad Request";
+  case 401:
+    return "401 Unauthorized";
+  case 404:
+    return "404 Not Found";
+  case 418:
+    return "418 I AM A TEAPOT";
+  case 500:
+    return "500 Internal Server Error";
   }
 }

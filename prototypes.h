@@ -54,3 +54,38 @@ typedef struct {
 } TextBuffer;
 
 int appendTxtToBuffer(TextBuffer *dest, const char *src);
+
+// enums
+typedef enum Color {
+  RED = 55,
+  GREEN = 176,
+  BLUE = 38,
+} color_t;
+// color_t is a new type that can only have one of the values defined in the
+
+typedef enum {
+  EXIT_SUCCESS = 0,
+  EXIT_FAILURE = 1,
+  EXIT_COMMAND_NOT_FOUND = 127,
+  EXIT_EXTREMELLY_LARGE_INT =
+      1236347263412839714, // add a very large integer to test behaviour of
+                           // sizeof() on enums
+} ExitStatus;
+
+// incrementing enums
+typedef enum {
+  first = 87,
+  second, // becomes 88
+  third,  // becomes 89
+} IncrementedEnums;
+
+// for http to str test function (also tests switch statements)
+typedef enum {
+  HTTP_BAD_REQUEST = 400,
+  HTTP_UNAUTHORIZED = 401,
+  HTTP_NOT_FOUND = 404,
+  HTTP_TEAPOT = 418,
+  HTTP_INTERNAL_SERVER_ERROR = 500
+} http_error_code_t;
+
+char *http_to_str(http_error_code_t code);
