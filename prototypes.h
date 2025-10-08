@@ -89,3 +89,27 @@ typedef enum {
 } http_error_code_t;
 
 char *http_to_str(http_error_code_t code);
+
+// unions
+typedef enum SnekObjectKind {
+  INTEGER, // 0  - for the urposes of identifying if an object in a union has
+           // become an int or a string
+  STRING,  // 1
+} snek_object_kind_t;
+
+typedef union SnekObjectData { // when we set snek_object_data_t.v_int it
+                               // becomes an int stored in memory and when we
+                               // set snek_object_data.v_string it becomes a
+                               // string in memory
+  int v_int;
+  char *v_string;
+} snek_object_data_t;
+
+typedef struct SnekObject {
+  snek_object_kind_t kind;
+  snek_object_data_t data;
+} snek_object_t;
+
+snek_object_t new_integer(int);
+snek_object_t new_string(char *str);
+void format_object(snek_object_t obj, char *buffer);

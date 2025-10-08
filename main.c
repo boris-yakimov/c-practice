@@ -315,6 +315,16 @@ int main() {
   // therefore the test with smaller integers enum are 4 bytes each and in the
   // second one they are 8 bytes each.
 
+  // unions
+  char unionTestBufferInt[100];
+  char unionTestBufferStr[100];
+  snek_object_t unionTestWithInt = new_integer(5);
+  snek_object_t unionTestWithstr = new_string("union test");
+  format_object(unionTestWithInt, unionTestBufferInt);
+  format_object(unionTestWithInt, unionTestBufferStr);
+  printf("buffer with int union %s\n", unionTestBufferInt);
+  printf("buffer with string union %s\n", unionTestBufferStr);
+
   return 0;
 }
 
@@ -453,4 +463,32 @@ char *http_to_str(http_error_code_t code) {
   case 500:
     return "500 Internal Server Error";
   }
+}
+
+// unions
+void format_object(snek_object_t obj, char *buffer) {
+  switch (obj.kind) {
+  case INTEGER:
+    sprintf(buffer, "int:%d",
+            obj.data.v_int); // here the SnekObjectData union becomes an int
+    return;
+  case STRING:
+    sprintf(
+        buffer, "string:%s",
+        obj.data.v_string); // here the SnekObjectData union becomes a string
+    return;
+  default:
+    sprintf(buffer, "we shouln't reach this at all");
+    return;
+  }
+}
+
+snek_object_t new_integer(int i) { // set the snek_object_t.kind = Integer and
+                                   // populate inside it the value of 'i'
+  return (snek_object_t){.kind = INTEGER, .data = {.v_int = i}};
+}
+
+snek_object_t new_string(char *str) { // set the snek_object_t.kind = String and
+                                      // populate inside it the value of '*str'
+  return (snek_object_t){.kind = STRING, .data = {.v_string = str}};
 }
