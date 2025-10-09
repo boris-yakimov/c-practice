@@ -1,4 +1,5 @@
 // included in order to use size_t as a type for field of a struct bellow
+#include <cstdint>
 #include <string.h>
 
 // if two files include the same header files C will try to actually declare the
@@ -113,3 +114,23 @@ typedef struct SnekObject {
 snek_object_t new_integer(int);
 snek_object_t new_string(char *str);
 void format_object(snek_object_t obj, char *buffer);
+
+// memory layout of unions
+typedef union TcpPackerHeader {
+  struct tcp_header {
+    uint16_t src_port;  // 16 bits = 2 bytes
+    uint16_t dest_port; // 16 bitts = 2 bytes
+    uint32_t seq_num;   // 32 bits = 4 bytes
+  };
+  char raw[8]; // 64 bits = 8 bytes
+  // uint8_t raw[8]; can also work here because it is uint8_t = 1 byte * [8]
+
+  // uint8_t raw[8] expresses your intent clearly (“raw bytes”) and ensures
+  // unsigned 0–255 values.
+
+  // char raw[8] is technically more standard-compliant
+  // for strict aliasing (since char can alias anything).
+
+} packet_header_t; // the compiler allocates 8 bytes total here because the
+                   // union has 2 potential options either a tcp_header struct
+                   // or a raw field
