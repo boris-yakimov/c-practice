@@ -1,6 +1,7 @@
 // included in order to use size_t as a type for field of a struct bellow
-#include <cstdint>
 #include <string.h>
+// for uint8/16/32/etc
+#include <stdint.h>
 
 // if two files include the same header files C will try to actually declare the
 // functions in the header files twice which will result in an error the
