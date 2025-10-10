@@ -336,6 +336,46 @@ int main() {
   free(heapAllocatioNTest1);
   free(heapAllocatioNTest2);
 
+  // more malloc tests
+  int allocateScalarSize1 = 5;
+  int allocateScalarMultiplier1 = 2;
+  int *restultScalarTest1 =
+      allocate_scalar_array(allocateScalarSize1, allocateScalarMultiplier1);
+  printf("result of first test with size %d, multiplier %d:\n",
+         allocateScalarSize1, allocateScalarMultiplier1);
+  for (int scalarResultI = 0; scalarResultI < allocateScalarSize1;
+       scalarResultI++) {
+    printf("element %d, value %d\n", scalarResultI,
+           restultScalarTest1[scalarResultI]);
+  }
+  free(restultScalarTest1); // don't forget to free the memory that was
+                            // allocated by malloc
+
+  int allocateScalarSize2 = 3;
+  int allocateScalarMultiplier2 = 0;
+  int *restultScalarTest2 =
+      allocate_scalar_array(allocateScalarSize2, allocateScalarMultiplier2);
+  printf("result of first test with size %d, multiplier %d:\n",
+         allocateScalarSize2, allocateScalarMultiplier2);
+  for (int scalarResultI = 0; scalarResultI < allocateScalarSize2;
+       scalarResultI++) {
+    printf("element %d, value %d\n", scalarResultI,
+           restultScalarTest2[scalarResultI]);
+  }
+  free(restultScalarTest2); // don't forget to free the memory that was
+                            // allocated by malloc
+
+  // test with a massive allocated size
+  int allocateScalarSize3 = 1024 * 1024 * 10;
+  int allocateScalarMultiplier3 = 1;
+  int *restultScalarTest3 =
+      allocate_scalar_array(allocateScalarSize3, allocateScalarMultiplier3);
+  printf("result of first test with size %d, multiplier %d:\n",
+         allocateScalarSize3, allocateScalarMultiplier3);
+  // no print of each individual element here because the output will be massive
+  free(restultScalarTest3); // don't forget to free the memory that was
+                            // allocated by malloc
+
   return 0;
 }
 
@@ -503,10 +543,6 @@ snek_object_t new_string(char *str) { // set the snek_object_t.kind = String and
                                       // populate inside it the value of '*str'
   return (snek_object_t){.kind = STRING, .data = {.v_string = str}};
 }
-// TODO: // Fix the get_full_greeting function so that it allocates memory on
-// the heap and returns a pointer to that memory. Use the provided size
-// parameter to allocate enough space for the resulting string, be sure to
-// account for the size of each char. heap allocation tests
 
 char *get_full_greeting(char *greeting, char *name, int size) {
   // allocate on heap memory
@@ -531,6 +567,8 @@ char *get_full_greeting(char *greeting, char *name, int size) {
   //
   // here full_greeting Is a local variable (lives on the stack).
   // it holds the address of the memory block on the heap.
+
+  // we also want to make sure that the allocation has actually occured
   if (full_greeting == NULL) {
     fprintf(stderr, "memory allocation failed\n");
     exit(1);
@@ -539,4 +577,17 @@ char *get_full_greeting(char *greeting, char *name, int size) {
   return full_greeting;
   // When the function returns, full_greeting (the pointer variable) disappears,
   // but the heap memory it points to remains allocated until freed.
+}
+
+int *allocate_scalar_array(int size, int multiplier) {
+  int *arr_of_int = malloc(size * sizeof(int));
+  if (arr_of_int == NULL) {
+    return NULL;
+  }
+
+  for (int i = 0; i < size; i++) {
+    arr_of_int[i] = i * multiplier;
+  }
+
+  return arr_of_int;
 }

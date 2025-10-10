@@ -136,5 +136,6 @@ typedef union TcpPackerHeader {
                    // union has 2 potential options either a tcp_header struct
                    // or a raw field
 
-// heap allocation tests
+// heap allocation (malloc/calloc/free) tests
 char *get_full_greeting(char *greeting, char *name, int size);
+int *allocate_scalar_array(int size, int multiplier);
