@@ -6,6 +6,8 @@
 #include <stdio.h>
 // to use strcat
 #include <string.h>
+// for malloc
+#include <stdlib.h>
 
 /*
 this type of comment is also supported
@@ -325,6 +327,15 @@ int main() {
   printf("buffer with int union %s\n", unionTestBufferInt);
   printf("buffer with string union %s\n", unionTestBufferStr);
 
+  // heap allocations
+  char *heapAllocatioNTest1 = get_full_greeting("Hey", "Bob", 20);
+  char *heapAllocatioNTest2 = get_full_greeting("Hello", "Alice", 20);
+  printf("first heap allocation test: %s\n", heapAllocatioNTest1);
+  printf("second heap allocation test: %s\n", heapAllocatioNTest2);
+  // free the heap memory to avoid leaks
+  free(heapAllocatioNTest1);
+  free(heapAllocatioNTest2);
+
   return 0;
 }
 
@@ -491,4 +502,41 @@ snek_object_t new_integer(int i) { // set the snek_object_t.kind = Integer and
 snek_object_t new_string(char *str) { // set the snek_object_t.kind = String and
                                       // populate inside it the value of '*str'
   return (snek_object_t){.kind = STRING, .data = {.v_string = str}};
+}
+// TODO: // Fix the get_full_greeting function so that it allocates memory on
+// the heap and returns a pointer to that memory. Use the provided size
+// parameter to allocate enough space for the resulting string, be sure to
+// account for the size of each char. heap allocation tests
+
+char *get_full_greeting(char *greeting, char *name, int size) {
+  // allocate on heap memory
+  //
+  // Requests a block of memory from the heap.
+  //
+  // The heap allocator finds (or creates) a contiguous region of at least size
+  // bytes.
+  //
+  // Returns a pointer (char *) to the first byte of that heap block.
+  //
+  // This memory persists until you explicitly free() it. (which we do in the
+  // main() function)
+  char *full_greeting = malloc(
+      size *
+      sizeof(
+          char)); // here we are saying to malloc(), allocate enough
+                  // memory on the heap the to fit the size(provided
+                  // as a funciton argument) * whatever is the size of
+                  // char, so if char is 1 byte and the funciton argument size
+                  // is 20, we get a memory allocation of 20 bytes in heap
+  //
+  // here full_greeting Is a local variable (lives on the stack).
+  // it holds the address of the memory block on the heap.
+  if (full_greeting == NULL) {
+    fprintf(stderr, "memory allocation failed\n");
+    exit(1);
+  }
+  snprintf(full_greeting, size, "%s %s", greeting, name);
+  return full_greeting;
+  // When the function returns, full_greeting (the pointer variable) disappears,
+  // but the heap memory it points to remains allocated until freed.
 }

@@ -135,3 +135,6 @@ typedef union TcpPackerHeader {
 } packet_header_t; // the compiler allocates 8 bytes total here because the
                    // union has 2 potential options either a tcp_header struct
                    // or a raw field
+
+// heap allocation tests
+char *get_full_greeting(char *greeting, char *name, int size);
