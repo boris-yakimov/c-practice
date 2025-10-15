@@ -65,6 +65,8 @@ void stack_push(stack_t *stack, void *obj) {
   if (stack->count == stack->capacity) {
     size_t original_capacity = stack->capacity;
     stack->capacity *= 2;
+    // we use a tmp_data here to make sure that if stack reallocation fails
+    // we do not overwrite our original data with NULL
     void **tmp_data = realloc(stack->data, sizeof(void *) * stack->capacity);
 
     // if realloc has failed, revert back to the original capacity and just
