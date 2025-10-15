@@ -75,6 +75,8 @@ void stack_push(stack_t *stack, void *obj) {
       stack->capacity = original_capacity;
       return;
     } else {
+      // if realloc succeeded, update the stack->data to contain the new
+      // resized data
       stack->data = tmp_data;
     }
   }
