@@ -11,6 +11,7 @@ typedef struct Stack {
 
 stack_t *stack_new(size_t capacity);
 void stack_push(stack_t *stack, void *obj);
+void *stack_pop(stack_t *stack);
 
 int main() {
   // create new stack
@@ -47,9 +48,52 @@ int main() {
   printf("after four stack push - count: %zu ; capacity: %zu\n", s->count,
          s->capacity); // should continue to be double here as well
 
+  // pop an element from the stack
+  int *popped = stack_pop(s);
+  printf("after popping one element off the stack, the popped element is %d\n",
+         *(int *)popped);
+  printf("count of the stack after popping an element: %zu\n", s->count);
+  if (s->count > 0) {
+    printf("the last element in the stack data is now %d\n",
+           *(int *)s->data[s->count - 1]); // the new top of the stack is now at
+                                           // index count - 1
+  } else {
+    printf("the stack is now empty\n");
+  }
+
+  int f = 92;
+  // we do one more push after we've popped an element from the stack to make
+  // sure it keeps working
+  stack_push(s, &f);
+  printf("another stack push after we have used stack_pop in order to test - "
+         "count: %zu ; capacity: %zu\n",
+         s->count, s->capacity);
+  printf("the last element in the stack data is now %d\n",
+         *(int *)s->data[s->count - 1]);
+
   free(s->data); // make sure to free the data pointers of the stack
   free(s);       // then also free the stack pointer itself
   return 0;
+}
+
+stack_t *stack_new(size_t capacity) {
+  stack_t *new_stack =
+      malloc(sizeof(stack_t)); // allocate memory for the new stack
+  if (new_stack == NULL) {
+    return NULL;
+  }
+
+  new_stack->count = 0;
+  new_stack->capacity = capacity;
+  // allocate memory for 'capacity' number of void* elements
+  new_stack->data = malloc(capacity * sizeof(void *));
+
+  if (new_stack->data == NULL) {
+    free(new_stack);
+    return NULL;
+  }
+
+  return new_stack;
 }
 
 void stack_push(stack_t *stack, void *obj) {
@@ -87,22 +131,35 @@ void stack_push(stack_t *stack, void *obj) {
   stack->count++;
 }
 
-stack_t *stack_new(size_t capacity) {
-  stack_t *new_stack =
-      malloc(sizeof(stack_t)); // allocate memory for the new stack
-  if (new_stack == NULL) {
+void *stack_pop(stack_t *stack) {
+  if (stack == NULL) {
+    fprintf(stderr, "stack_pop was called with an invalid stack\n");
     return NULL;
   }
 
-  new_stack->count = 0;
-  new_stack->capacity = capacity;
-  // allocate memory for 'capacity' number of void* elements
-  new_stack->data = malloc(capacity * sizeof(void *));
-
-  if (new_stack->data == NULL) {
-    free(new_stack);
+  // nothing to pop
+  if (stack->count == 0) {
+    fprintf(stderr, "stack_pop was called on an empty stack\n");
     return NULL;
   }
 
-  return new_stack;
+  stack->count--; // decrement the count of elements in the stack in order to
+                  // make sure that stack size reflects that we have removed one
+                  // element from it
+
+  //  we pop the top element of the stack (the count-th element in the array).
+  // because the stack is LIFO (last in, first out)
+  void *popped_obj = stack->data[stack->count];
+
+  // nullify the pointer to the popped element so that it is no longer
+  // part of the stack.
+  //
+  // this step is optional since the stack's 'count'
+  // already defines the active portion of the stack.
+  //
+  // however, it is
+  // good practice to avoid leaving dangling pointers behind.
+  stack->data[stack->count] = NULL;
+
+  return popped_obj;
 }
