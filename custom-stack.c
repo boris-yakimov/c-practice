@@ -13,6 +13,7 @@ stack_t *stack_new(size_t capacity);
 void stack_push(stack_t *stack, void *obj);
 void *stack_pop(stack_t *stack);
 void stack_free(stack_t *stack);
+void dangerous_push(stack_t *stack);
 
 int main() {
   // create new stack
@@ -71,6 +72,10 @@ int main() {
          s->count, s->capacity);
   printf("the last element in the stack data is now %d\n",
          *(int *)s->data[s->count - 1]);
+
+  // here for testing invalid integer to pointer conversion examples, commented
+  // out to prevent seg fault errors
+  // dangerous_push(s);
 
   // free the memory used by the stack-> data and the stack itself
   stack_free(s);
@@ -168,7 +173,7 @@ void *stack_pop(stack_t *stack) {
 void stack_free(stack_t *stack) {
   if (stack == NULL) {
     fprintf(stderr,
-            "stack_push was called with either an invalid stack or object\n");
+            "stack_free was called with either an invalid stack or object\n");
     return;
   }
 
@@ -179,4 +184,28 @@ void stack_free(stack_t *stack) {
 
   // then also free the stack pointer itself
   free(stack);
+}
+
+// just for test purposes
+void dangerous_push(stack_t *stack) {
+  // we try to cast an integer to void * and push it on the stack
+  stack_push(stack, (void *)1337);
+  // casting an integer like 1337 to a void * is not portable and invalid unless
+  // you later cast it back to the exact same integer type, and even then,
+  // dereferencing it (like *(int*)...) is completely illegal.
+
+  int *b = malloc(sizeof(int));
+  *b = 1024;
+  // and here we try to push a pointer to an integer on the stack
+  stack_push(stack, (void *)b);
+
+  printf("the last element in the stack data is now %d\n",
+         *(int *)stack->data[stack->count - 1]);
+
+  printf("the secont to last element in the stack data is now %d\n",
+         *(int *)stack->data[stack->count - 2]);
+  // this is basically trying to read from random memory.
+  // stack->data[stack->count - 2] is (void *)1337.
+  // So *(int *)1337 dereferences address 0x539 — illegal access →
+  // segfault.
 }
