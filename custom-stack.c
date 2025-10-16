@@ -12,6 +12,7 @@ typedef struct Stack {
 stack_t *stack_new(size_t capacity);
 void stack_push(stack_t *stack, void *obj);
 void *stack_pop(stack_t *stack);
+void stack_free(stack_t *stack);
 
 int main() {
   // create new stack
@@ -71,8 +72,8 @@ int main() {
   printf("the last element in the stack data is now %d\n",
          *(int *)s->data[s->count - 1]);
 
-  free(s->data); // make sure to free the data pointers of the stack
-  free(s);       // then also free the stack pointer itself
+  // free the memory used by the stack-> data and the stack itself
+  stack_free(s);
   return 0;
 }
 
@@ -162,4 +163,20 @@ void *stack_pop(stack_t *stack) {
   stack->data[stack->count] = NULL;
 
   return popped_obj;
+}
+
+void stack_free(stack_t *stack) {
+  if (stack == NULL) {
+    fprintf(stderr,
+            "stack_push was called with either an invalid stack or object\n");
+    return;
+  }
+
+  // make sure to free the data pointers of the stack
+  if (stack->data != NULL) {
+    free(stack->data);
+  }
+
+  // then also free the stack pointer itself
+  free(stack);
 }
