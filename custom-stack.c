@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct Stack {
   size_t count;    // number of elements in the stack
@@ -14,6 +15,7 @@ void stack_push(stack_t *stack, void *obj);
 void *stack_pop(stack_t *stack);
 void stack_free(stack_t *stack);
 void dangerous_push(stack_t *stack);
+void stack_push_multiple_types(stack_t *stack);
 
 int main() {
   // create new stack
@@ -76,6 +78,9 @@ int main() {
   // here for testing invalid integer to pointer conversion examples, commented
   // out to prevent seg fault errors
   // dangerous_push(s);
+
+  // tests to push different types in stack - float and string (char *)
+  stack_push_multiple_types(s);
 
   // free the memory used by the stack-> data and the stack itself
   stack_free(s);
@@ -186,7 +191,8 @@ void stack_free(stack_t *stack) {
   free(stack);
 }
 
-// just for test purposes
+// function has invalid behaviour with integer to pointer casting but is here
+// for test purposes to understand the bavhiour
 void dangerous_push(stack_t *stack) {
   // we try to cast an integer to void * and push it on the stack (this is not
   // valid)
@@ -226,4 +232,30 @@ void dangerous_push(stack_t *stack) {
   // stack->data[stack->count - 2] is (void *)1337.
   // So *(int *)1337 dereferences address 0x539 — illegal access →
   // segfault.
+}
+
+void stack_push_multiple_types(stack_t *stack) {
+  // Allocate memory on the heap for a float and set the value to which it's
+  // pointed to 3.14 Push the float * onto the stack using stack_push
+  float *a = malloc(sizeof(float));
+  *a = 3.14;
+  // cast the float to void * and push it on the stack
+  stack_push(stack, (void *)a);
+
+  printf("the last element in the stack data is now %.2f\n",
+         *(float *)stack->data[stack->count - 1]);
+
+  // **b here because char * = pointer to array of chars and * because
+  // malloc creates a pointer to the address of the char * in memory
+  char *value = "test123";
+  char *test_string = malloc(
+      sizeof(char) * (strlen(value) + 1)); // +1 because of the null terminated
+  strcpy(test_string, value);
+
+  // character at the end of the string
+  // cast the char * to a void * and push it onto the stack
+  stack_push(stack, (void *)test_string);
+
+  printf("the last element in the stack data is now %s\n",
+         (char *)stack->data[stack->count - 1]);
 }
