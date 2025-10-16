@@ -188,16 +188,34 @@ void stack_free(stack_t *stack) {
 
 // just for test purposes
 void dangerous_push(stack_t *stack) {
-  // we try to cast an integer to void * and push it on the stack
+  // we try to cast an integer to void * and push it on the stack (this is not
+  // valid)
   stack_push(stack, (void *)1337);
   // casting an integer like 1337 to a void * is not portable and invalid unless
   // you later cast it back to the exact same integer type, and even then,
   // dereferencing it (like *(int*)...) is completely illegal.
 
+  // allocate 4 bytes for an integer
   int *b = malloc(sizeof(int));
   *b = 1024;
-  // and here we try to push a pointer to an integer on the stack
+  // this is a valid pointer to an integer
   stack_push(stack, (void *)b);
+
+  // the reason (void *)b is valid is because :
+  // b has type int * → a pointer to an int.
+  // b points to a memory location on the heap that can hold an integer.
+  // Dereferencing it with *b is valid, and you can read/write the integer:
+  // b → 0x1234 (heap address) → 1024
+  //
+  // (void *)b casts b from int * to void *.
+  // void * is a generic pointer type — it can hold any object pointer.
+  // The value of the pointer doesn’t change; it still points to the same memory
+  // address (0x1234 in our example).
+
+  // the result of these 2 stack pushes should be
+  // Last element (1024) → points to real allocated memory (malloc) → safe.
+  // Second-to-last (1337) → fabricated pointer (void*)1337 → unsafe (undefined
+  // behaviour).
 
   printf("the last element in the stack data is now %d\n",
          *(int *)stack->data[stack->count - 1]);
