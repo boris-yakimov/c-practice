@@ -235,7 +235,7 @@ void dangerous_push(stack_t *stack) {
 }
 
 void stack_push_multiple_types(stack_t *stack) {
-  // Allocate memory on the heap for a float and set the value to which it's
+  // allocate memory on the heap for a float and set the value to which it's
   // pointed to 3.14 Push the float * onto the stack using stack_push
   float *a = malloc(sizeof(float));
   *a = 3.14;
@@ -244,18 +244,25 @@ void stack_push_multiple_types(stack_t *stack) {
 
   printf("the last element in the stack data is now %.2f\n",
          *(float *)stack->data[stack->count - 1]);
+  // output :
+  // the last element in the stack data is now 3.14
 
-  // **b here because char * = pointer to array of chars and * because
-  // malloc creates a pointer to the address of the char * in memory
+  // create a string
   char *value = "test123";
+  // allocate memory for the string on the heap
   char *test_string = malloc(
       sizeof(char) * (strlen(value) + 1)); // +1 because of the null terminated
+                                           // character at the end of the string
+
+  // copy the temp string from the stack to the allocated memory in heap
   strcpy(test_string, value);
 
-  // character at the end of the string
   // cast the char * to a void * and push it onto the stack
   stack_push(stack, (void *)test_string);
 
   printf("the last element in the stack data is now %s\n",
          (char *)stack->data[stack->count - 1]);
+
+  // output:
+  // the last element in the stack data is now test123
 }
