@@ -2,16 +2,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct Object object_t;
+
+typedef struct Vector {
+  object_t *x;
+  object_t *y;
+  object_t *z;
+} vector_t;
+
 typedef enum ObjectKind {
   INTEGER,
   FLOAT,
   STRING,
+  VECTOR3,
 } object_kind_t;
 
 typedef union ObjectData {
   int v_int;
   float v_float;
   char *v_string;
+  vector_t v_vector3;
 } object_data_t;
 
 typedef struct Object {
@@ -24,6 +34,7 @@ object_t *new_snek_float(float value);
 object_t *new_snek_string(
     const char *value); // we make this a const char * to make it clear we do
                         // not intend to modify the input
+object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z);
 
 int main() {
   // int
@@ -34,8 +45,28 @@ int main() {
   object_t *float_object = new_snek_float(3.14);
   printf("%.2f\n", float_object->data.v_float);
 
+  // string
   object_t *string_object = new_snek_string("hello world");
   printf("%s\n", string_object->data.v_string);
+
+  // vector (3 point object)
+  object_t *x = new_snek_integer(1);
+  object_t *y = new_snek_integer(2);
+  object_t *z = new_snek_integer(3);
+  object_t *vector_object = new_snek_vector3(x, y, z);
+  // there is a lot more nesting here because
+  // vector_object contains 3 of object_t
+  // than each object_t contains a data and a kind field
+  // the data field is a union that can have different types
+  printf("x:%d y:%d z:%d\n", vector_object->data.v_vector3.x->data.v_int,
+         vector_object->data.v_vector3.y->data.v_int,
+         vector_object->data.v_vector3.z->data.v_int);
+
+  object_t *a = new_snek_integer(1);
+  object_t *second_vector = new_snek_vector3(a, a, a);
+  printf("x:%d y:%d z:%d\n", second_vector->data.v_vector3.x->data.v_int,
+         second_vector->data.v_vector3.y->data.v_int,
+         second_vector->data.v_vector3.z->data.v_int);
 
   // don't forget to cleanup heap memory
   free(int_object);
@@ -44,6 +75,8 @@ int main() {
     free(string_object->data.v_string);
   }
   free(string_object);
+  free(vector_object);
+  free(second_vector);
 
   return 0;
 }
@@ -99,5 +132,25 @@ object_t *new_snek_string(const char *value) {
   // copy value into newly allocated char * object (also copies the '\0')
   strcpy(obj->data.v_string, value);
 
+  return obj;
+}
+
+// a collection type object (similar to python's tuple that contains 3 elements)
+object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z) {
+  if (x == NULL || y == NULL || z == NULL) {
+    return NULL;
+  }
+
+  // allocate space on heap of the object
+  object_t *obj = malloc(sizeof(object_t));
+  if (obj == NULL) {
+    return NULL;
+  }
+
+  obj->kind = VECTOR3;
+
+  obj->data.v_vector3.x = x;
+  obj->data.v_vector3.y = y;
+  obj->data.v_vector3.z = z;
   return obj;
 }
