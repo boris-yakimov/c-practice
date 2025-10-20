@@ -10,23 +10,31 @@ typedef struct Vector {
   object_t *z;
 } vector_t;
 
+typedef struct Array {
+  size_t size;         // number of elements in array
+  object_t **elements; // actual elements inside the array are pointers to other
+                       // objects
+} array_t;
+
 typedef enum ObjectKind {
   INTEGER,
   FLOAT,
   STRING,
   VECTOR3,
+  ARRAY,
 } object_kind_t;
 
 typedef union ObjectData {
   int v_int;
   float v_float;
   char *v_string;
-  vector_t v_vector3;
+  vector_t v_vector3; // 3 point integer
+  array_t v_array;    // dynamic size array
 } object_data_t;
 
 typedef struct Object {
-  object_kind_t kind;
-  object_data_t data;
+  object_kind_t kind; // the kind of the object
+  object_data_t data; // type of data to be stored in object
 } object_t;
 
 object_t *new_snek_integer(int value);
@@ -35,6 +43,7 @@ object_t *new_snek_string(
     const char *value); // we make this a const char * to make it clear we do
                         // not intend to modify the input
 object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z);
+object_t *new_snek_array(size_t size);
 
 int main() {
   // int
@@ -68,15 +77,26 @@ int main() {
          second_vector->data.v_vector3.y->data.v_int,
          second_vector->data.v_vector3.z->data.v_int);
 
+  object_t *array_object = new_snek_array(2);
+  printf("size of the array: %zu\n", array_object->data.v_array.size);
+  // TODO: for now we just allocate the array, no elements are put inside it yet
+
   // don't forget to cleanup heap memory
   free(int_object);
   free(float_object);
+  // strings
   if (string_object->data.v_string != NULL) {
     free(string_object->data.v_string);
   }
   free(string_object);
+  // vector
   free(vector_object);
   free(second_vector);
+  // array
+  if (array_object->data.v_array.elements != NULL) {
+    free(array_object->data.v_array.elements);
+  }
+  free(array_object);
 
   return 0;
 }
@@ -149,8 +169,41 @@ object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z) {
 
   obj->kind = VECTOR3;
 
+  // assign each object inside the fields of the vector struct
   obj->data.v_vector3.x = x;
   obj->data.v_vector3.y = y;
   obj->data.v_vector3.z = z;
+
+  // can also be represented with a compound literal instead of assigning each
+  // value individually
+  // obj->data.v_vector3 = (vector_t){.x = x, .y = y, .z = z};
+
+  return obj;
+}
+
+object_t *new_snek_array(size_t size) {
+  // allocate space on heap for the object
+  object_t *obj = malloc(sizeof(object_t));
+  if (obj == NULL) {
+    return NULL;
+  }
+
+  // allocate space for an array of pointers, each of size one object_t *
+  // and the array itself of 'size' (from function argument)
+  // use calloc to make sure they are initialized to zero values
+  object_t **array_of_pointers = calloc(size, sizeof(object_t *));
+  if (array_of_pointers == NULL) {
+    free(obj);
+    return NULL;
+  }
+
+  obj->kind = ARRAY;
+  obj->data.v_array = (array_t){.size = size, .elements = array_of_pointers};
+  // instead of using a compounding literal we can also break it down into
+  // separate rows :
+  //
+  // obj->data.v_array.size = size;
+  // obj->data.v_array.elements = array_of_pointers;
+
   return obj;
 }
