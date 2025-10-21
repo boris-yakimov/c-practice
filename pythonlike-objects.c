@@ -59,6 +59,7 @@ object_t *new_snek_array(size_t size);
 bool snek_array_set(object_t *obj, size_t index, object_t *value);
 object_t *snek_array_get(object_t *obj, size_t index);
 int snek_len(object_t *obj);
+object_t *snek_add(object_t *a, object_t *b);
 
 int main() {
   // int
@@ -304,9 +305,9 @@ int snek_len(object_t *obj) {
   }
 
   switch (obj->kind) {
-  case INTEGER || FLOAT:
-    return 1;
   case INTEGER:
+    return 1;
+  case FLOAT:
     return 1;
   case STRING:
     return strlen(obj->data.v_string);
@@ -320,5 +321,53 @@ int snek_len(object_t *obj) {
   }
 }
 
-// TODO:
-// object_t snek_array_add(object_t *a, object_t *b) { return NULL; }
+object_t *snek_add(object_t *a, object_t *b) {
+  if (a == NULL || b == NULL) {
+    return NULL;
+  }
+
+  switch (a->kind) {
+  case INTEGER:
+    if (b->kind == INTEGER) {
+      return new_snek_integer(a->data.v_int + b->data.v_int);
+    }
+
+    if (b->kind == FLOAT) {
+      // TODO: can I add an int and a float ? what does it convert to ?
+      return new_snek_float(a->data.v_int + b->data.v_float);
+    }
+
+    return NULL; // if netither int nor float return because invalid operation
+                 // we can add only integers and floats together
+
+  case FLOAT:
+    if (b->kind == INTEGER) {
+      return new_snek_float(a->data.v_float + b->data.v_int);
+    }
+
+    if (b->kind == FLOAT) {
+      // TODO: can I add an int and a float ? what does it convert to ?
+      return new_snek_float(a->data.v_float + b->data.v_float);
+    }
+
+    return NULL; // if netither int nor float return because invalid operation
+                 // we can add only integers and floats together
+
+  case STRING:
+    if (b->kind != STRING) {
+      return NULL; // only a string can be added to another string
+    }
+
+    // TODO: continue here
+    int len_of_combined_str =
+        strlen(a->data.v_string) + strlen(b->data.v_string) + 1; // +1 for '\0'
+    char *combined_strings =
+        calloc(len_of_combined_str, sizeof(char) + 1); // +1 for '\0'
+    char *temp_string =
+        strcat(a->data.v_string,
+               b->data.v_string); // TODO: does it add null terminator ?
+    combined_strings = temp_string;
+    free(temp_string);
+    return combined_strings;
+  }
+}
