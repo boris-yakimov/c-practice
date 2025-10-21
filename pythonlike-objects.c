@@ -1,6 +1,18 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Lab tests implementing a tagged runtime object system — the skeleton of a
+// dynamic language / interpreter value model, similar to how Python, Lisp, Lua,
+// or a toy VM represents values.
+// - object_t is a boxed value with a kind tag (INTEGER, FLOAT, STRING, etc.)
+// - All primitive and composite types are heap-allocated objects
+// - VECTOR3 is a product type — fixed tuple of 3 objects
+// - ARRAY is a dynamically sized growable list of object pointers
+// - All the new_snek_* functions are constructors in a managed heap
+// - We are manually handling reference semantics + lifetime + dynamic typing
+// - We are doing runtime type tagging + union dispatch
 
 typedef struct Object object_t;
 
@@ -44,6 +56,8 @@ object_t *new_snek_string(
                         // not intend to modify the input
 object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z);
 object_t *new_snek_array(size_t size);
+bool snek_array_set(object_t *obj, size_t index, object_t *value);
+object_t *snek_array_get(object_t *obj, size_t index);
 
 int main() {
   // int
@@ -77,21 +91,44 @@ int main() {
          second_vector->data.v_vector3.y->data.v_int,
          second_vector->data.v_vector3.z->data.v_int);
 
-  object_t *array_object = new_snek_array(2);
+  // arrays
+  int test_array_size = 3;
+  object_t *array_object = new_snek_array(test_array_size);
   printf("size of the array: %zu\n", array_object->data.v_array.size);
-  // TODO: for now we just allocate the array, no elements are put inside it yet
+  object_t *new_int = new_snek_integer(3);
+  // set a new value inside the array at index 0
+  bool success = snek_array_set(array_object, 0, new_int);
+  if (!success) {
+    printf("failed to set %d in array at index %d\n", new_int->data.v_int, 0);
+  }
+  // get the value inside the array at index 0
+  object_t *value_at_index_0 = snek_array_get(array_object, 0);
+  printf("element in array at index %d is %d\n", 0,
+         value_at_index_0->data.v_int);
+  // get new integer object
+  object_t *new_int_1 = new_snek_integer(5);
+  // set the new integer inside the array at index 1
+  bool success_set_1 = snek_array_set(array_object, 1, new_int_1);
+  // get the element at index 1 from the array
+  object_t *value_at_index_1 = snek_array_get(array_object, 1);
+  // check what we got at th end
+  printf("element in array at index %d is %d\n", 1,
+         value_at_index_1->data.v_int);
 
   // don't forget to cleanup heap memory
   free(int_object);
   free(float_object);
+
   // strings
   if (string_object->data.v_string != NULL) {
     free(string_object->data.v_string);
   }
   free(string_object);
+
   // vector
   free(vector_object);
   free(second_vector);
+
   // array
   if (array_object->data.v_array.elements != NULL) {
     free(array_object->data.v_array.elements);
@@ -207,3 +244,46 @@ object_t *new_snek_array(size_t size) {
 
   return obj;
 }
+
+bool snek_array_set(object_t *obj, size_t index, object_t *value) {
+  if (obj == NULL || value == NULL) {
+    return false;
+  }
+
+  if (obj->kind != ARRAY) {
+    return false;
+  }
+
+  // check if index may be out of bounds depending on the size of the array
+  // valid index range is ..size - 1 (because we start from 0)
+  if (index >= obj->data.v_array.size) {
+    return false;
+  }
+
+  // set the the value in array element at index
+  obj->data.v_array.elements[index] = value;
+
+  return true;
+}
+
+object_t *snek_array_get(object_t *obj, size_t index) {
+  if (obj == NULL) {
+    return NULL;
+  }
+
+  if (obj->kind != ARRAY) {
+    return NULL;
+  }
+
+  // check if index may be out of bounds depending on the size of the array
+  // valid index range is ..size - 1 (because we start from 0)
+  if (index >= obj->data.v_array.size) {
+    return NULL;
+  }
+
+  // set the the value in array element at index
+  return obj->data.v_array.elements[index];
+}
+// TODO:
+// int snek_len(object_t *obj) { return NULL; }
+// object_t snek_array_add(object_t *a, object_t *b) { return NULL; }
