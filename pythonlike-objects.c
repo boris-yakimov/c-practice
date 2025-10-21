@@ -58,6 +58,7 @@ object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z);
 object_t *new_snek_array(size_t size);
 bool snek_array_set(object_t *obj, size_t index, object_t *value);
 object_t *snek_array_get(object_t *obj, size_t index);
+int snek_len(object_t *obj);
 
 int main() {
   // int
@@ -92,7 +93,7 @@ int main() {
          second_vector->data.v_vector3.z->data.v_int);
 
   // arrays
-  int test_array_size = 3;
+  int test_array_size = 5;
   object_t *array_object = new_snek_array(test_array_size);
   printf("size of the array: %zu\n", array_object->data.v_array.size);
   object_t *new_int = new_snek_integer(3);
@@ -106,7 +107,7 @@ int main() {
   printf("element in array at index %d is %d\n", 0,
          value_at_index_0->data.v_int);
   // get new integer object
-  object_t *new_int_1 = new_snek_integer(5);
+  object_t *new_int_1 = new_snek_integer(15);
   // set the new integer inside the array at index 1
   bool success_set_1 = snek_array_set(array_object, 1, new_int_1);
   // get the element at index 1 from the array
@@ -114,6 +115,18 @@ int main() {
   // check what we got at th end
   printf("element in array at index %d is %d\n", 1,
          value_at_index_1->data.v_int);
+
+  // get the length of an oject
+  int len_of_int = snek_len(int_object);
+  printf("len of int: %d\n", len_of_int);
+  int len_of_float = snek_len(float_object);
+  printf("len of float: %d\n", len_of_float);
+  int len_of_string = snek_len(string_object);
+  printf("len of string: %d\n", len_of_string);
+  int len_of_vector3 = snek_len(vector_object);
+  printf("len of vector: %d\n", len_of_vector3);
+  int len_of_array = snek_len(array_object);
+  printf("len of array: %d\n", len_of_array);
 
   // don't forget to cleanup heap memory
   free(int_object);
@@ -284,6 +297,28 @@ object_t *snek_array_get(object_t *obj, size_t index) {
   // set the the value in array element at index
   return obj->data.v_array.elements[index];
 }
+
+int snek_len(object_t *obj) {
+  if (obj == NULL) {
+    return -1;
+  }
+
+  switch (obj->kind) {
+  case INTEGER || FLOAT:
+    return 1;
+  case INTEGER:
+    return 1;
+  case STRING:
+    return strlen(obj->data.v_string);
+  case VECTOR3:
+    return 3;
+  case ARRAY:
+    return obj->data.v_array.size;
+  default:
+    fprintf(stderr, "invalid object type");
+    return -1;
+  }
+}
+
 // TODO:
-// int snek_len(object_t *obj) { return NULL; }
 // object_t snek_array_add(object_t *a, object_t *b) { return NULL; }
