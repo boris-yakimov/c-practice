@@ -429,7 +429,10 @@ object_t *snek_add(object_t *a, object_t *b) {
 
     // int + float = float
     if (b->kind == FLOAT) {
-      return new_snek_float(a->data.v_int + b->data.v_float);
+      // typecasting 'а' to a float here is optional since it will get promoted
+      // to a float automatically, but I add it for visual clarity of what
+      // happens
+      return new_snek_float((float)a->data.v_int + b->data.v_float);
     }
 
     return NULL; // if netither int nor float return because invalid operation
@@ -438,7 +441,10 @@ object_t *snek_add(object_t *a, object_t *b) {
   case FLOAT:
     // float + int = float
     if (b->kind == INTEGER) {
-      return new_snek_float(a->data.v_float + b->data.v_int);
+      // typecasting 'b' to a float here is optional since it will get promoted
+      // to a float automatically, but I add it for visual clarity of what
+      // happens
+      return new_snek_float(a->data.v_float + (float)b->data.v_int);
     }
 
     if (b->kind == FLOAT) {
@@ -455,10 +461,14 @@ object_t *snek_add(object_t *a, object_t *b) {
 
     // Calculate the length of the new string by combining the length of the two
     // strings (properly handling the null terminator)
-    int len_of_combined_str =
+    //
+    // type should be size_t not int because we can hit issues with very large
+    // strings and size_t is what strlen() returns as a valid size
+    size_t len_of_combined_str =
         strlen(a->data.v_string) + strlen(b->data.v_string) + 1; // +1 for '\0'
 
-    // Allocate memory for a new temporary string using calloc
+    // Allocate memory for a new temporary string using calloc (to make sure it
+    // is also initialized)
     char *temp_string = calloc(len_of_combined_str, sizeof(char));
     if (temp_string == NULL) {
       fprintf(stderr, "failed to allocate space for temp string");
@@ -520,16 +530,16 @@ object_t *snek_add(object_t *a, object_t *b) {
     }
 
     // Create a new_snek_array with the combined length of the two arrays.
-    int len_of_combined_array = a->data.v_array.size + b->data.v_array.size;
+    size_t len_of_combined_array = a->data.v_array.size + b->data.v_array.size;
     object_t *new_combined_array = new_snek_array(len_of_combined_array);
 
     // populate elements from array 'a' into the new array
-    for (int i = 0; i < a->data.v_array.size; i++) {
+    for (size_t i = 0; i < a->data.v_array.size; i++) {
       object_t *current_value_at_index_i = snek_array_get(a, i);
       bool succes =
           snek_array_set(new_combined_array, i, current_value_at_index_i);
       if (!succes) {
-        fprintf(stderr, "failed to set value in array 'a' at index %d", i);
+        fprintf(stderr, "failed to set value in array 'a' at index %zu", i);
       }
     }
     // offset is used to see how many elements have been addded so far from
@@ -538,13 +548,13 @@ object_t *snek_add(object_t *a, object_t *b) {
     // have already been populated by 'a'
 
     // populate elements from array 'b' into the new array
-    int offset = a->data.v_array.size;
-    for (int i = 0; i < b->data.v_array.size; i++) {
+    size_t offset = a->data.v_array.size;
+    for (size_t i = 0; i < b->data.v_array.size; i++) {
       object_t *current_value_at_index_i = snek_array_get(b, i);
       bool succes = snek_array_set(new_combined_array, offset + i,
                                    current_value_at_index_i);
       if (!succes) {
-        fprintf(stderr, "failed to set value in array 'b' at index %d", i);
+        fprintf(stderr, "failed to set value in array 'b' at index %zu", i);
       }
     }
 
