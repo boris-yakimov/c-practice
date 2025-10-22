@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,6 +130,73 @@ int main() {
   int len_of_array = snek_len(array_object);
   printf("len of array: %d\n", len_of_array);
 
+  //// dynamic add function
+  // add integers
+  object_t *int_one = new_snek_integer(1);
+  object_t *int_three = new_snek_integer(3);
+  object_t *int_four = snek_add(int_one, int_three);
+  printf("result of snek_add(int_one, int_three): %d\n", int_four->data.v_int);
+
+  // add floats
+  object_t *float_one = new_snek_float(1.5);
+  object_t *float_three = new_snek_float(3.5);
+  object_t *float_five = snek_add(float_one, float_three);
+  printf("result of snek_add(float_one, float_three): %.2f\n",
+         float_five->data.v_float);
+
+  // add strings
+  object_t *string_one = new_snek_string("hello");
+  object_t *string_two = new_snek_string(", world!");
+  object_t *result_string = snek_add(string_one, string_two);
+  printf("result of snek_add(string_one, string_two): %s\n",
+         result_string->data.v_string);
+  // what if we add the same string twice
+  object_t *repeated_string = new_snek_string("hello ");
+  object_t *result_after_repeated_string =
+      snek_add(repeated_string, repeated_string);
+  printf("result of snek_add(repeated_string, repeated_string): %s\n",
+         result_after_repeated_string->data.v_string);
+
+  // add vectors
+  object_t *vector_int_one = new_snek_integer(1);
+  object_t *vector_int_three = new_snek_integer(3);
+  object_t *vectory_int_five = new_snek_integer(5);
+  object_t *vector3_one =
+      new_snek_vector3(vector_int_one, vector_int_three, vectory_int_five);
+  object_t *result_vector_add = snek_add(vector3_one, vector3_one);
+  printf("vector3_one has: x: %d, y: %d, z: %d\n", vector_int_one->data.v_int,
+         vector_int_three->data.v_int, vectory_int_five->data.v_int);
+  printf("result of repeated snek_add(vector3_one, vector3_one - x: %d y: %d "
+         "z: %d\n",
+         result_vector_add->data.v_vector3.x->data.v_int,
+         result_vector_add->data.v_vector3.y->data.v_int,
+         result_vector_add->data.v_vector3.z->data.v_int);
+
+  // add arrays
+  // array of 2 integers
+  object_t *int_six = new_snek_integer(6);
+  object_t *array_of_sixes = new_snek_array(2);
+  assert(snek_array_set(array_of_sixes, 0, int_six));
+  assert(snek_array_set(array_of_sixes, 1, int_six));
+
+  // array of 3 strings
+  object_t *hi = new_snek_string("hi");
+  object_t *hellos = new_snek_array(3);
+  assert(snek_array_set(hellos, 0, hi));
+  assert(snek_array_set(hellos, 1, hi));
+  assert(snek_array_set(hellos, 2, hi));
+
+  // add the 2 together
+  object_t *result_array_add = snek_add(array_of_sixes, hellos);
+  printf("result of adding 2 arays, one of size 2 one of size 3: %zu\n",
+         result_array_add->data.v_array.size);
+  printf("print the second element: [%d] and fourth element: [%s] in "
+         "the array to see that "
+         "it is larger than both the 2 and 3 sized ones that were merged "
+         "together, also second element is an int, fourth is a string\n ",
+         result_array_add->data.v_array.elements[1]->data.v_int,
+         result_array_add->data.v_array.elements[3]->data.v_string);
+
   // don't forget to cleanup heap memory
   free(int_object);
   free(float_object);
@@ -148,6 +216,29 @@ int main() {
     free(array_object->data.v_array.elements);
   }
   free(array_object);
+
+  // custom dynamic objects
+  // NOTE: this is not a great way to free those objects as they are complex
+  // nested object structures that may contain data fields with additional
+  // malloc() logic, for now they will do but I need to also add a snek_free()
+  // function that checks the type of object and baased on that it does a proper
+  // free() depending on what the object actually allocates in memory
+  free(int_one);
+  free(int_three);
+  free(int_four);
+  free(float_one);
+  free(float_three);
+  free(float_five);
+  free(string_one);
+  free(string_two);
+  free(result_string);
+  free(repeated_string);
+  free(result_after_repeated_string);
+  free(vector_int_one);
+  free(vector_int_three);
+  free(vectory_int_five);
+  free(vector3_one);
+  free(result_vector_add);
 
   return 0;
 }
@@ -259,6 +350,7 @@ object_t *new_snek_array(size_t size) {
   return obj;
 }
 
+// set *value in an array (*obj) at index
 bool snek_array_set(object_t *obj, size_t index, object_t *value) {
   if (obj == NULL || value == NULL) {
     return false;
@@ -280,6 +372,7 @@ bool snek_array_set(object_t *obj, size_t index, object_t *value) {
   return true;
 }
 
+// get the value inside array (*obj) at index
 object_t *snek_array_get(object_t *obj, size_t index) {
   if (obj == NULL) {
     return NULL;
@@ -321,6 +414,8 @@ int snek_len(object_t *obj) {
   }
 }
 
+// dynamically add 2 things together, works for integers, floats, strings,
+// arrays, vector3
 object_t *snek_add(object_t *a, object_t *b) {
   if (a == NULL || b == NULL) {
     return NULL;
@@ -332,8 +427,8 @@ object_t *snek_add(object_t *a, object_t *b) {
       return new_snek_integer(a->data.v_int + b->data.v_int);
     }
 
+    // int + float = float
     if (b->kind == FLOAT) {
-      // TODO: can I add an int and a float ? what does it convert to ?
       return new_snek_float(a->data.v_int + b->data.v_float);
     }
 
@@ -341,12 +436,12 @@ object_t *snek_add(object_t *a, object_t *b) {
                  // we can add only integers and floats together
 
   case FLOAT:
+    // float + int = float
     if (b->kind == INTEGER) {
       return new_snek_float(a->data.v_float + b->data.v_int);
     }
 
     if (b->kind == FLOAT) {
-      // TODO: can I add an int and a float ? what does it convert to ?
       return new_snek_float(a->data.v_float + b->data.v_float);
     }
 
@@ -358,16 +453,105 @@ object_t *snek_add(object_t *a, object_t *b) {
       return NULL; // only a string can be added to another string
     }
 
-    // TODO: continue here
+    // Calculate the length of the new string by combining the length of the two
+    // strings (properly handling the null terminator)
     int len_of_combined_str =
         strlen(a->data.v_string) + strlen(b->data.v_string) + 1; // +1 for '\0'
-    char *combined_strings =
-        calloc(len_of_combined_str, sizeof(char) + 1); // +1 for '\0'
-    char *temp_string =
-        strcat(a->data.v_string,
-               b->data.v_string); // TODO: does it add null terminator ?
-    combined_strings = temp_string;
+
+    // Allocate memory for a new temporary string using calloc
+    char *temp_string = calloc(len_of_combined_str, sizeof(char));
+    if (temp_string == NULL) {
+      fprintf(stderr, "failed to allocate space for temp string");
+      return NULL;
+    }
+
+    // combine data from both arrays to a new one
+    //  we use strcpy the first time to just copy the first full aray into the
+    //  new one
+    //  than we use strcat to only append the contents of 'b' on top of
+    //  what was already added from 'a'
+    strcpy(temp_string, a->data.v_string);
+    strcat(temp_string, b->data.v_string);
+
+    // Create a new_snek_string and pass in the temporary string.
+    object_t *combined_string = new_snek_string(temp_string);
+
+    // Free the memory for the temporary string and return the new string
+    // object.
     free(temp_string);
-    return combined_strings;
+
+    return combined_string;
+
+  case VECTOR3:
+    if (b->kind != VECTOR3) {
+      return NULL;
+    }
+
+    // Recursively call snek_add for each of the x, y, and z fields. For
+    // example, a vector [1,2,3]+[4,5,6] should result in a new vector [5,7,9].
+    object_t *result_of_x = snek_add(a->data.v_vector3.x, b->data.v_vector3.x);
+    if (!result_of_x) {
+      return NULL; // handle the case where recursive add may fail
+    }
+    object_t *result_of_y = snek_add(a->data.v_vector3.y, b->data.v_vector3.y);
+    if (!result_of_y) {
+      free(result_of_x); // if the second add fails for any reason we need to
+                         // free the memory that was allocated by the first add
+                         // otherwise we will leak it
+
+      return NULL; // handle the case where recursive add may fail
+    }
+    object_t *result_of_z = snek_add(a->data.v_vector3.z, b->data.v_vector3.z);
+    if (!result_of_z) {
+      // and in this case we have aleady allocated 2 obejcts, so we need to free
+      // both if the third allocation fails, so that we do not leak memory
+      free(result_of_x);
+      free(result_of_y);
+
+      return NULL; // handle the case where recursive add may fail
+    }
+    object_t *new_vector =
+        new_snek_vector3(result_of_x, result_of_y, result_of_z);
+    return new_vector;
+
+  case ARRAY:
+    if (b->kind != ARRAY) {
+      return NULL;
+    }
+
+    // Create a new_snek_array with the combined length of the two arrays.
+    int len_of_combined_array = a->data.v_array.size + b->data.v_array.size;
+    object_t *new_combined_array = new_snek_array(len_of_combined_array);
+
+    // populate elements from array 'a' into the new array
+    for (int i = 0; i < a->data.v_array.size; i++) {
+      object_t *current_value_at_index_i = snek_array_get(a, i);
+      bool succes =
+          snek_array_set(new_combined_array, i, current_value_at_index_i);
+      if (!succes) {
+        fprintf(stderr, "failed to set value in array 'a' at index %d", i);
+      }
+    }
+    // offset is used to see how many elements have been addded so far from
+    // array 'a' and continue at the next free index, if we don't do this we
+    // sould start from i = 0 which will start overwriting the elements that
+    // have already been populated by 'a'
+
+    // populate elements from array 'b' into the new array
+    int offset = a->data.v_array.size;
+    for (int i = 0; i < b->data.v_array.size; i++) {
+      object_t *current_value_at_index_i = snek_array_get(b, i);
+      bool succes = snek_array_set(new_combined_array, offset + i,
+                                   current_value_at_index_i);
+      if (!succes) {
+        fprintf(stderr, "failed to set value in array 'b' at index %d", i);
+      }
+    }
+
+    return new_combined_array;
+
+  default:
+    fprintf(stderr, "invalid operation");
+    return NULL;
   }
 }
