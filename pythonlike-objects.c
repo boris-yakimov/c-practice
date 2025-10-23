@@ -212,6 +212,9 @@ int main() {
   object_t *test_refcount_ojb = new_snek_object();
 
   // don't forget to cleanup heap memory
+  // NOTE: these intentionally still use free() instead of the refcounting
+  // garbage collection as they were added while learning the behaviour of
+  // malloc and free, leaving them just as a visual
   free(int_object);
   free(float_object);
 
@@ -232,27 +235,25 @@ int main() {
   free(array_object);
 
   // custom dynamic objects
-  // NOTE: this is not a great way to free those objects as they are complex
-  // nested object structures that may contain data fields with additional
-  // malloc() logic, for now they will do but I need to also add a snek_free()
-  // function that checks the type of object and baased on that it does a proper
-  // free() depending on what the object actually allocates in memory
-  free(int_one);
-  free(int_three);
-  free(int_four);
-  free(float_one);
-  free(float_three);
-  free(float_five);
-  free(string_one);
-  free(string_two);
-  free(result_string);
-  free(repeated_string);
-  free(result_after_repeated_string);
-  free(vector_int_one);
-  free(vector_int_three);
-  free(vectory_int_five);
-  free(vector3_one);
-  free(result_vector_add);
+  // NOTE: we use our custom refcounting garbage collection approach to free up
+  // all test objects, this will decrement the refcounter and if it hits 0 it
+  // will free the object from heap memory
+  refcount_dec(int_one);
+  refcount_dec(int_three);
+  refcount_dec(int_four);
+  refcount_dec(float_one);
+  refcount_dec(float_three);
+  refcount_dec(float_five);
+  refcount_dec(string_one);
+  refcount_dec(string_two);
+  refcount_dec(result_string);
+  refcount_dec(repeated_string);
+  refcount_dec(result_after_repeated_string);
+  refcount_dec(vector_int_one);
+  refcount_dec(vector_int_three);
+  refcount_dec(vectory_int_five);
+  refcount_dec(vector3_one);
+  refcount_dec(result_vector_add);
 
   return 0;
 }
@@ -267,6 +268,9 @@ object_t *new_snek_integer(int value) {
   obj->kind = INTEGER;
   obj->data.v_int = value;
 
+  // refcount GC
+  obj->refcount = 1;
+
   return obj;
 }
 
@@ -279,6 +283,9 @@ object_t *new_snek_float(float value) {
 
   obj->kind = FLOAT;
   obj->data.v_float = value;
+
+  // refcount GC
+  obj->refcount = 1;
 
   return obj;
 }
@@ -307,6 +314,9 @@ object_t *new_snek_string(const char *value) {
   }
   // copy value into newly allocated char * object (also copies the '\0')
   strcpy(obj->data.v_string, value);
+
+  // refcount GC
+  obj->refcount = 1;
 
   return obj;
 }
@@ -339,6 +349,9 @@ object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z) {
   // value individually
   // obj->data.v_vector3 = (vector_t){.x = x, .y = y, .z = z};
 
+  // refcount for GC
+  obj->refcount = 1;
+
   return obj;
 }
 
@@ -365,6 +378,9 @@ object_t *new_snek_array(size_t size) {
   //
   // obj->data.v_array.size = size;
   // obj->data.v_array.elements = array_of_pointers;
+
+  // refcount for GC
+  obj->refcount = 1;
 
   return obj;
 }
@@ -601,7 +617,7 @@ object_t *new_snek_object() {
   }
 
   // incremenet refcount for garbage collection
-  refcount_inc(new_obj);
+  new_obj->refcount = 1;
   return new_obj;
 }
 
@@ -665,9 +681,9 @@ void refcount_free(object_t *obj) {
     return;
   }
 
-  // moved here so that we don't have to duplicate free() on each of the cases
-  // above since at the end no matter what type it is, the parent object will be
-  // freed
+  // moved outside the switch statements so that we don't have to duplicate
+  // free() of the parent container on each of the cases above since at the end
+  // no matter what type it is, the parent/container object will be freed
   free(obj);
   return;
 }
