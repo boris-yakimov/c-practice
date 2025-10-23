@@ -46,6 +46,12 @@ typedef union ObjectData {
 } object_data_t;
 
 typedef struct Object {
+  // used to test refcounting GC
+  // increment/decrement refcount of each object
+  // if the refcount of an object has reached 0 it needs to be freed from memory
+  // (i.e. garbage collection)
+  int refcount;
+
   object_kind_t kind; // the kind of the object
   object_data_t data; // type of data to be stored in object
 } object_t;
@@ -61,6 +67,11 @@ bool snek_array_set(object_t *obj, size_t index, object_t *value);
 object_t *snek_array_get(object_t *obj, size_t index);
 int snek_len(object_t *obj);
 object_t *snek_add(object_t *a, object_t *b);
+object_t *new_snek_object();
+
+void refcount_inc(object_t *obj);
+void refcount_dec(object_t *obj);
+void refcount_free(object_t *obj);
 
 int main() {
   // int
@@ -197,6 +208,9 @@ int main() {
          result_array_add->data.v_array.elements[1]->data.v_int,
          result_array_add->data.v_array.elements[3]->data.v_string);
 
+  // refcounting GC
+  object_t *test_refcount_ojb = new_snek_object();
+
   // don't forget to cleanup heap memory
   free(int_object);
   free(float_object);
@@ -311,6 +325,11 @@ object_t *new_snek_vector3(object_t *x, object_t *y, object_t *z) {
 
   obj->kind = VECTOR3;
 
+  // increment refcount of each of the 3 objects for garbage collection
+  refcount_inc(x);
+  refcount_inc(y);
+  refcount_inc(z);
+
   // assign each object inside the fields of the vector struct
   obj->data.v_vector3.x = x;
   obj->data.v_vector3.y = y;
@@ -366,7 +385,16 @@ bool snek_array_set(object_t *obj, size_t index, object_t *value) {
     return false;
   }
 
-  // set the the value in array element at index
+  // increment the refcount of the new value that will be placed in the array,
+  // for future garbage collection
+  refcount_inc(value);
+  if (obj->data.v_array.elements[index] != NULL) {
+    // decrement the refcount of the object that is currently at this index
+    // before we update it to a new value
+    refcount_dec(obj->data.v_array.elements[index]);
+  }
+
+  // set the the new 'value' in the array 'element' at 'index'
   obj->data.v_array.elements[index] = value;
 
   return true;
@@ -564,4 +592,82 @@ object_t *snek_add(object_t *a, object_t *b) {
     fprintf(stderr, "invalid operation");
     return NULL;
   }
+}
+
+object_t *new_snek_object() {
+  object_t *new_obj = calloc(sizeof(object_t), 1);
+  if (new_obj == NULL) {
+    return NULL;
+  }
+
+  // incremenet refcount for garbage collection
+  refcount_inc(new_obj);
+  return new_obj;
+}
+
+void refcount_inc(object_t *obj) {
+  if (obj == NULL) {
+    return;
+  }
+  obj->refcount++;
+}
+
+void refcount_dec(object_t *obj) {
+  if (obj == NULL) {
+    return;
+  }
+  obj->refcount--;
+
+  if (obj->refcount == 0) {
+    refcount_free(obj);
+  }
+}
+
+void refcount_free(object_t *obj) {
+  if (obj == NULL) {
+    return;
+  }
+
+  switch (obj->kind) {
+  // int and float are simple because they don't have anything nested
+  // so we just have to call free(obj) on each of them
+  case INTEGER:
+    break;
+  case FLOAT:
+    break;
+  // for string we have to also make sure that we first free the data inside
+  // and only than can we free the obj
+  case STRING:
+    free(obj->data.v_string);
+    break;
+  // the vector3 object_t contains other object_t's (snek integers)
+  // here we jsut decrement them and if their refcount hits 0, the refcount(dec)
+  // function will call refcount_free() with object->kind integer for each,
+  // which will in turn free them
+  case VECTOR3:
+    refcount_dec(obj->data.v_vector3.x);
+    refcount_dec(obj->data.v_vector3.y);
+    refcount_dec(obj->data.v_vector3.z);
+    break;
+  case ARRAY:
+    for (int i = 0; i < obj->data.v_array.size; i++) {
+      // similarly to the vector3 approach, we do a refcount decrement of the
+      // element that is inside the array, if the refcount of that particular
+      // element reaches 0, the refcount_dec() function will take care of
+      // freeing it from memory
+      refcount_dec(obj->data.v_array.elements[i]);
+    }
+    // free the array itself
+    free(obj->data.v_array.elements);
+    break;
+  default:
+    fprintf(stderr, "invalid object type during refcount_free()");
+    return;
+  }
+
+  // moved here so that we don't have to duplicate free() on each of the cases
+  // above since at the end no matter what type it is, the parent object will be
+  // freed
+  free(obj);
+  return;
 }
