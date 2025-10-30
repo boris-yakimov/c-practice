@@ -15,6 +15,21 @@
 // - We are manually handling reference semantics + lifetime + dynamic typing
 // - We are doing runtime type tagging + union dispatch
 
+typedef struct Stack {
+  size_t count;
+  size_t capacity;
+  void **data;
+} stack_t;
+
+typedef struct VirtualMachine {
+  stack_t *frames;
+  stack_t *objects;
+} vm_t;
+
+typedef struct StackFrame {
+  stack_t *references;
+} frame_t;
+
 typedef struct Object object_t;
 
 typedef struct Vector {
@@ -61,6 +76,14 @@ bool snek_array_set(object_t *obj, size_t index, object_t *value);
 object_t *snek_array_get(object_t *obj, size_t index);
 int snek_len(object_t *obj);
 object_t *snek_add(object_t *a, object_t *b);
+stack_t *stack_new(size_t capacity);
+void stack_free(stack_t *stack);
+void *vm_new();
+void vm_free(vm_t *vm);
+void stack_push(stack_t *stack, void *obj);
+void vm_frame_push(vm_t *vm, frame_t *frame);
+frame_t *vm_new_frame(vm_t *vm);
+void frame_free(frame_t *frame);
 
 int main() {
   // int
@@ -196,6 +219,12 @@ int main() {
          "together, also second element is an int, fourth is a string\n ",
          result_array_add->data.v_array.elements[1]->data.v_int,
          result_array_add->data.v_array.elements[3]->data.v_string);
+
+  // Mark and sweep
+  vm_t *vm = vm_new();
+  printf("frames capacity %zu\n", vm->frames->capacity);
+  printf("objects capacity %zu\n", vm->objects->capacity);
+  vm_free(vm);
 
   // don't forget to cleanup heap memory
   free(int_object);
@@ -560,4 +589,126 @@ object_t *snek_add(object_t *a, object_t *b) {
     fprintf(stderr, "invalid operation");
     return NULL;
   }
+}
+
+stack_t *stack_new(size_t capacity) {
+  stack_t *stack = malloc(sizeof(stack_t));
+  if (stack == NULL) {
+    return NULL;
+  }
+
+  stack->capacity = capacity;
+  stack->count = 0;
+  stack->data = malloc(stack->capacity * sizeof(void *));
+  if (stack->data == NULL) {
+    free(stack);
+    return NULL;
+  }
+
+  return stack;
+}
+
+void stack_free(stack_t *stack) {
+  // if its already freed do nothing
+  if (stack == NULL) {
+    return;
+  }
+
+  // free the memory allocated by the data inside the stack
+  if (stack->data != NULL) {
+    free(stack->data);
+  }
+
+  // than free the stack itself
+  free(stack);
+}
+
+void stack_push(stack_t *stack, void *obj) {
+  if (stack->count == stack->capacity) {
+    // double the stack capacity to avoid having to reallocate often
+    stack->capacity *= 2;
+    stack->data = realloc(stack->data, stack->capacity * sizeof(void *));
+    if (stack->data == NULL) {
+      exit(1); // we should see immediately if this fails
+    }
+  }
+
+  stack->data[stack->count] = obj;
+  stack->count++;
+}
+
+void *vm_new() {
+  vm_t *vm = malloc(sizeof(vm_t));
+  if (vm == NULL) {
+    return NULL;
+  }
+
+  vm->frames = stack_new(8);
+  vm->objects = stack_new(8);
+
+  return vm;
+}
+
+void vm_free(vm_t *vm) {
+  if (vm == NULL) {
+    return; // nothing to be freed
+  }
+
+  if (vm->frames != NULL) {
+    stack_free(vm->frames);
+  }
+
+  if (vm->objects != NULL) {
+    stack_free(vm->objects);
+  }
+
+  free(vm);
+}
+
+void vm_frame_push(vm_t *vm, frame_t *frame) {
+  if (vm == NULL || vm->frames == NULL) {
+    return; // vm should not be empty
+  }
+
+  if (frame == NULL) {
+    return; // frame should not be empty
+  }
+
+  // push a frame on the frames stack
+  stack_push(vm->frames, frame);
+}
+
+frame_t *vm_new_frame(vm_t *vm) {
+  if (vm == NULL) {
+    return NULL; // vm should not be empty
+  }
+  // allocate space for a frame on the heap
+  frame_t *frame = malloc(sizeof(frame_t));
+  if (frame == NULL) {
+    return NULL; // heap allocation should succeed
+  }
+
+  // create a new stack reference with capacity 8
+  frame->references = stack_new(8);
+  if (frame->references == NULL) {
+    free(frame);
+    return NULL; // assigning a new stack to the references should succeed
+  }
+
+  // push newly allocated frame to the stack
+  stack_push(vm->frames, frame);
+
+  return frame;
+}
+
+void frame_free(frame_t *frame) {
+  if (frame == NULL) {
+    return; // already free
+  }
+
+  if (frame->references != NULL) {
+    stack_free(frame->references);
+  }
+
+  free(frame);
 }
