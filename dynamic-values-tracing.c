@@ -695,8 +695,10 @@ frame_t *vm_new_frame(vm_t *vm) {
     return NULL; // assigning a new stack to the references should succeed
   }
 
-  // push newly allocated frame to the stack
-  stack_push(vm->frames, frame);
+  // push newly allocated frame to the stack, we use the helper function we
+  // created above to make sure we don't forget to associate the frame with our
+  // VM
+  vm_frame_push(vm, frame);
 
   return frame;
 }
