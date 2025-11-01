@@ -84,6 +84,7 @@ void stack_push(stack_t *stack, void *obj);
 void vm_frame_push(vm_t *vm, frame_t *frame);
 frame_t *vm_new_frame(vm_t *vm);
 void frame_free(frame_t *frame);
+void vm_track_object(vm_t *vm, object_t *obj);
 
 int main() {
   // int
@@ -591,6 +592,47 @@ object_t *snek_add(object_t *a, object_t *b) {
   }
 }
 
+object_t *_new_snek_object(vm_t *vm) {
+  // allocate and initialize an object on the heap, e.g. snek_integer,
+  // snek_string, snek_array, etc
+  object_t *obj = calloc(1, sizeof(object_t));
+  if (obj == NULL) {
+    return NULL;
+  }
+
+  // track the object in the VM for garbage collection
+  vm_track_object(vm, obj);
+
+  return obj;
+}
+
+void snek_object_free(object_t *obj) {
+  switch (obj->kind) {
+  // int and float are simple because they don't have anything nested
+  // so we just have to call free(obj) on each of them
+  case INTEGER:
+    break;
+  case FLOAT:
+    break;
+  // for string we have to also make sure that we first free the data inside
+  // and only than can we free the obj
+  case STRING:
+    free(obj->data.v_string);
+    break;
+  // for refcount we had to free nested integer objects inside the vector but in
+  // mark and sweep GC we don't, we can just free the main object and let mark
+  // and sweep handle freeing the nested objects
+  case VECTOR3:
+    break;
+  // for array we need to only free the elements array, mark and sweep GC will
+  // handle freeing the nested objects inside each element
+  case ARRAY:
+    free(obj->data.v_array.elements);
+  }
+
+  free(obj);
+}
+
 stack_t *stack_new(size_t capacity) {
   stack_t *stack = malloc(sizeof(stack_t));
   if (stack == NULL) {
@@ -655,11 +697,37 @@ void vm_free(vm_t *vm) {
   }
 
   if (vm->frames != NULL) {
+    // if there are frames inside the vm stack go over them and free each one
+    for (int i = 0; i < vm->frames->count; i++) {
+      // typecasting (frame_t *) is optional here is it will implictly be cast
+      // by the C compiler from void * to frame_t* but it might be nice to
+      // explicitly declare the type that we expect this to be for safety
+      // also implicit converstions are not allowed in C++ so if we use C++
+      // compiler it will fail
+      frame_free((frame_t *)vm->frames->data[i]);
+    }
+    // than free the frames stack
     stack_free(vm->frames);
+    // defensive programming: nullify the pointers in case they may accidentally
+    // be referenced after they are freed
+    vm->frames =
+        NULL; // this prevents dangling pointers if vm is ever reused after free
   }
 
   if (vm->objects != NULL) {
+    // if there are objects inside the vm stack go over them and free each one
+    for (int i = 0; i < vm->objects->count; i++) {
+      // typecasting (object_t *) is optional here is it will implictly be cast
+      // by the C compiler from void * to frame_t* but it might be nice to
+      // explicitly declare the type that we expect this to be for safety
+      // also implicit converstions are not allowed in C++ so if we use C++
+      // compiler it will fail
+      snek_object_free((object_t *)vm->objects->data[i]);
+    }
     stack_free(vm->objects);
+    // defensive programming: nullify the pointers in case they may accidentally
+    // be referenced after they are freed
+    vm->objects = NULL;
   }
 
   free(vm);
@@ -713,4 +781,18 @@ void frame_free(frame_t *frame) {
   }
 
   free(frame);
+}
+
+void vm_track_object(vm_t *vm, object_t *obj) {
+  if (vm == NULL || obj == NULL) {
+    return; // neither should be empty
+  }
+
+  // push the object to the vm->objects stack, in order to
+  // start tracking it for later garbage collection
+  stack_push(vm->objects,
+             obj); // optionally we can also cast the object here to (void
+                   // *)obj, this is is not
+  // required in C but may be required if we use a C++ compiler, since they may
+  // not allow implicit conversions
 }
