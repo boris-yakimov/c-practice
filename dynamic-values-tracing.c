@@ -796,3 +796,10 @@ void vm_track_object(vm_t *vm, object_t *obj) {
   // required in C but may be required if we use a C++ compiler, since they may
   // not allow implicit conversions
 }
+
+void frame_reference_object(frame_t *frame, object_t *obj) {
+  if (frame == NULL || obj == NULL) {
+    return; // neither should be empty
+  }
+  stack_push(frame->references, (void *)obj);
+}
