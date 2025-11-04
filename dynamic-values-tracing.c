@@ -88,6 +88,8 @@ frame_t *vm_new_frame(vm_t *vm);
 void frame_free(frame_t *frame);
 void vm_track_object(vm_t *vm, object_t *obj);
 void mark(vm_t *vm);
+void stack_remove_nulls(stack_t *stack);
+void sweep(vm_t *vm);
 
 int main() {
   // int
@@ -610,6 +612,8 @@ object_t *_new_snek_object(vm_t *vm) {
   return obj;
 }
 
+// free an object from heap memory, while checking what type it is, if it is a
+// type that has nested objects, we would free those as well
 void snek_object_free(object_t *obj) {
   switch (obj->kind) {
   // int and float are simple because they don't have anything nested
@@ -667,6 +671,25 @@ void stack_free(stack_t *stack) {
 
   // than free the stack itself
   free(stack);
+}
+
+void stack_remove_nulls(stack_t *stack) {
+  size_t new_count = 0;
+
+  // iterate through the stack and compact non-NULL pointers.
+  for (size_t i = 0; i < stack->count; ++i) {
+    if (stack->data[i] != NULL) {
+      stack->data[new_count++] = stack->data[i];
+    }
+  }
+
+  // update the count to reflect the new number of elements.
+  stack->count = new_count;
+
+  // optionally, you might want to zero out the remaining slots.
+  for (size_t i = new_count; i < stack->capacity; ++i) {
+    stack->data[i] = NULL;
+  }
 }
 
 void stack_push(stack_t *stack, void *obj) {
@@ -940,4 +963,43 @@ void trace(vm_t *vm) {
   // to be checked, after we dealt with marking both the gray objects and their
   // nested ones, we no longer need this placeholder
   stack_free(gray_objects);
+}
+
+void sweep(vm_t *vm) {
+  if (vm == NULL) {
+    return; // vm should not be empty
+  }
+
+  for (int i = 0; i < vm->objects->count; i++) {
+    // go over each object in the stack
+    object_t *obj = (object_t *)vm->objects->data[i];
+    if (obj->is_marked == true) {
+      // if it is marked as used remove the mark
+      obj->is_marked = false;
+      continue;
+    } else {
+      // otherwise free the oject
+      snek_object_free(obj);
+      // and set the previous position it occupied to NULL
+      vm->objects->data[i] = NULL;
+    }
+  }
+
+  // remove NULLs from the objects stack in the VM
+  stack_remove_nulls(vm->objects);
+}
+
+void vm_collect_garbage(vm_t *vm) {
+  if (vm == NULL) {
+    return; // vm should not be empty
+  }
+
+  // mark objects that have no references for garbage collection
+  mark(vm);
+
+  // trace all the objects (and their nested objects) for garbage collection
+  trace(vm);
+
+  // sweep all of the objects that have no references
+  sweep(vm);
 }
