@@ -63,6 +63,7 @@ typedef union ObjectData {
 typedef struct Object {
   object_kind_t kind; // the kind of the object
   object_data_t data; // type of data to be stored in object
+  bool is_marked;     // mark and sweep GC of objects
 } object_t;
 
 object_t *new_snek_integer(int value);
@@ -81,10 +82,12 @@ void stack_free(stack_t *stack);
 void *vm_new();
 void vm_free(vm_t *vm);
 void stack_push(stack_t *stack, void *obj);
+void *stack_pop(stack_t *stack);
 void vm_frame_push(vm_t *vm, frame_t *frame);
 frame_t *vm_new_frame(vm_t *vm);
 void frame_free(frame_t *frame);
 void vm_track_object(vm_t *vm, object_t *obj);
+void mark(vm_t *vm);
 
 int main() {
   // int
@@ -602,6 +605,7 @@ object_t *_new_snek_object(vm_t *vm) {
 
   // track the object in the VM for garbage collection
   vm_track_object(vm, obj);
+  obj->is_marked = false;
 
   return obj;
 }
@@ -677,6 +681,39 @@ void stack_push(stack_t *stack, void *obj) {
 
   stack->data[stack->count] = obj;
   stack->count++;
+}
+
+void *stack_pop(stack_t *stack) {
+  if (stack == NULL) {
+    fprintf(stderr, "stack_pop was called with an invalid stack\n");
+    return NULL;
+  }
+
+  // nothing to pop
+  if (stack->count == 0) {
+    fprintf(stderr, "stack_pop was called on an empty stack\n");
+    return NULL;
+  }
+
+  stack->count--; // decrement the count of elements in the stack in order to
+                  // make sure that stack size reflects that we have removed one
+                  // element from it
+
+  //  we pop the top element of the stack (the count-th element in the array).
+  // because the stack is LIFO (last in, first out)
+  void *popped_obj = stack->data[stack->count];
+
+  // nullify the pointer to the popped element so that it is no longer
+  // part of the stack.
+  //
+  // this step is optional since the stack's 'count'
+  // already defines the active portion of the stack.
+  //
+  // however, it is
+  // good practice to avoid leaving dangling pointers behind.
+  stack->data[stack->count] = NULL;
+
+  return popped_obj;
 }
 
 void *vm_new() {
@@ -783,6 +820,13 @@ void frame_free(frame_t *frame) {
   free(frame);
 }
 
+void frame_reference_object(frame_t *frame, object_t *obj) {
+  if (frame == NULL || obj == NULL) {
+    return; // neither should be empty
+  }
+  stack_push(frame->references, (void *)obj);
+}
+
 void vm_track_object(vm_t *vm, object_t *obj) {
   if (vm == NULL || obj == NULL) {
     return; // neither should be empty
@@ -797,9 +841,103 @@ void vm_track_object(vm_t *vm, object_t *obj) {
   // not allow implicit conversions
 }
 
-void frame_reference_object(frame_t *frame, object_t *obj) {
-  if (frame == NULL || obj == NULL) {
-    return; // neither should be empty
+void mark(vm_t *vm) {
+  if (vm == NULL) {
+    return; // vm should not be empty
   }
-  stack_push(frame->references, (void *)obj);
+
+  // go over each frame
+  for (int f = 0; f < vm->frames->count; f++) {
+    frame_t *frame = (frame_t *)vm->frames->data[f];
+    if (frame == NULL || frame->references == NULL) {
+      continue;
+    }
+
+    // go over each reference in each frame
+    for (int r = 0; r < frame->references->count; r++) {
+      object_t *obj = (object_t *)frame->references->data[r];
+      // continue only if object is not NULL to prevent seg fault errors when
+      // ocassionally the VM may hold null references on the stack
+      if (obj != NULL) {
+        // set mark on each referenced object to true because we have those
+        // objects references directly by the stack frames which means they
+        // should not be cleaned up
+        obj->is_marked = true;
+      }
+    }
+  }
+}
+
+void trace_mark_object(stack_t *gray_objects, object_t *obj) {
+  if (obj == NULL || obj->is_marked == true) {
+    return; // obj should not be empty and we don't need to do anything to
+            // objects that are already marked
+  }
+
+  // if object is not empty and not marked, we mark it and we push it on the
+  // gray objects stack
+  obj->is_marked = true;
+  stack_push(gray_objects, obj);
+}
+
+// there are 3 sets of objects in Mark and Swee
+// white - Unreachable, not yet visited → will be freed
+// gray - Reachable, discovered but not fully processed
+// black - Reachable and fully processed (all children marked)
+
+// mark nested objects for GC
+void trace_blacken_object(stack_t *gray_objects, object_t *obj) {
+  switch (obj->kind) {
+    // int, float,string don't contain any references to other objects
+  case INTEGER:
+    return;
+  case FLOAT:
+    return;
+  case STRING:
+    return;
+  case VECTOR3:
+    // mark the nested integer objects inside vector3
+    trace_mark_object(gray_objects, obj->data.v_vector3.x);
+    trace_mark_object(gray_objects, obj->data.v_vector3.y);
+    trace_mark_object(gray_objects, obj->data.v_vector3.z);
+    break;
+  case ARRAY:
+    // mark each nested element inside the array
+    for (int i = 0; i < obj->data.v_array.size; i++) {
+      object_t *elem = obj->data.v_array.elements[i];
+      trace_mark_object(gray_objects, elem);
+    }
+    break;
+  }
+}
+
+// trace all objects in the VM and mark them and their nested objects for GC
+void trace(vm_t *vm) {
+  stack_t *gray_objects = stack_new(8);
+  if (gray_objects == NULL) {
+    return; // the allocation of a new stack failed
+  }
+
+  // build gray stack
+  // collect a list of all marked objects in the VM
+  for (int i = 0; i < vm->objects->count; i++) {
+    object_t *obj = (object_t *)vm->objects->data[i];
+    if (obj->is_marked == true) {
+      // push each object that is marked to the gray_objects stack
+      stack_push(gray_objects, obj);
+    }
+  }
+
+  // go through each marked object and mark all of its nested objects
+  while (gray_objects->count > 0) {
+    // pop one of them and move it to the backen objects stack
+    object_t *popped_obj = stack_pop(gray_objects);
+    trace_blacken_object(gray_objects, popped_obj);
+  }
+
+  // we free this stack because we used it only as a placeholder stack to keep
+  // the gray objects that were marked and but their nested objects also needed
+  // to be checked, after we dealt with marking both the gray objects and their
+  // nested ones, we no longer need this placeholder
+  stack_free(gray_objects);
 }
