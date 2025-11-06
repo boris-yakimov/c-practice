@@ -86,10 +86,14 @@ void *stack_pop(stack_t *stack);
 void vm_frame_push(vm_t *vm, frame_t *frame);
 frame_t *vm_new_frame(vm_t *vm);
 void frame_free(frame_t *frame);
+void frame_reference_object(frame_t *frame, object_t *obj);
 void vm_track_object(vm_t *vm, object_t *obj);
 void mark(vm_t *vm);
 void stack_remove_nulls(stack_t *stack);
 void sweep(vm_t *vm);
+void trace_blacken_object(stack_t *gray_objects, object_t *obj);
+void trace_mark_object(stack_t *gray_objects, object_t *obj);
+void vm_collect_garbage(vm_t *vm);
 
 int main() {
   // int
@@ -253,7 +257,6 @@ int main() {
   free(array_object);
 
   // custom dynamic objects
-  // TODO: should be replaced with garbage collection
   free(int_one);
   free(int_three);
   free(int_four);
@@ -270,6 +273,91 @@ int main() {
   free(vectory_int_five);
   free(vector3_one);
   free(result_vector_add);
+
+  // Continue here for tracing GC tests
+  // Test stack_push and stack_pop
+  stack_t *stack = stack_new(2);
+  assert(stack != NULL);
+  int a_val = 10;
+  int b_val = 20;
+  stack_push(stack, &a_val);
+  stack_push(stack, &b_val);
+  assert(stack->count == 2);
+  int *popped = stack_pop(stack);
+  assert(*popped == 20);
+  assert(stack->count == 1);
+  printf("stack_push/stack_pop test passed, popped value = %d\n", *popped);
+
+  // Test stack_remove_nulls
+  stack->data[0] = NULL;
+  stack->data[1] = NULL;
+  stack->count = 2;
+  stack_remove_nulls(stack);
+  assert(stack->count == 0);
+  printf("stack_remove_nulls test passed (count=%zu)\n", stack->count);
+  stack_free(stack);
+
+  // Test VM + frame creation
+  vm_t *test_vm = vm_new();
+  assert(test_vm != NULL);
+  frame_t *test_frame = vm_new_frame(test_vm);
+  assert(test_frame != NULL);
+  assert(test_vm->frames->count == 1);
+  printf("vm_new_frame test passed (frames=%zu)\n", test_vm->frames->count);
+
+  // Test frame_reference_object
+  object_t *ref_obj = new_snek_integer(123);
+  frame_reference_object(test_frame, ref_obj);
+  assert(test_frame->references->count == 1);
+  printf("frame_reference_object test passed (count=%zu)\n",
+         test_frame->references->count);
+
+  // Test vm_track_object
+  vm_track_object(test_vm, ref_obj);
+  assert(test_vm->objects->count == 1);
+  printf("vm_track_object test passed (objects=%zu)\n",
+         test_vm->objects->count);
+
+  // Test trace_mark_object
+  stack_t *gray = stack_new(4);
+  trace_mark_object(gray, ref_obj);
+  assert(ref_obj->is_marked == true);
+  assert(gray->count == 1);
+  printf("trace_mark_object test passed\n");
+
+  // Test trace_blacken_object for VECTOR3
+  object_t *vx = new_snek_integer(1);
+  object_t *vy = new_snek_integer(2);
+  object_t *vz = new_snek_integer(3);
+  object_t *vec = new_snek_vector3(vx, vy, vz);
+  trace_blacken_object(gray, vec);
+  assert(vx->is_marked && vy->is_marked && vz->is_marked);
+  printf("trace_blacken_object (VECTOR3) test passed\n");
+
+  // Test trace_blacken_object for ARRAY
+  object_t *arr = new_snek_array(2);
+  snek_array_set(arr, 0, vx);
+  snek_array_set(arr, 1, vy);
+  trace_blacken_object(gray, arr);
+  assert(vx->is_marked && vy->is_marked);
+  printf("trace_blacken_object (ARRAY) test passed\n");
+
+  stack_free(gray);
+
+  // Test sweep: add unmarked object and expect it removed
+  object_t *will_be_collected = new_snek_integer(999);
+  vm_track_object(test_vm, will_be_collected);
+  assert(test_vm->objects->count == 2);
+  sweep(test_vm);
+  assert(test_vm->objects->count == 1); // unmarked object was removed
+  printf("sweep test passed (remaining objects=%zu)\n",
+         test_vm->objects->count);
+
+  // Test full GC (mark + trace + sweep)
+  vm_collect_garbage(test_vm);
+  printf("vm_collect_garbage test ran successfully\n");
+
+  vm_free(test_vm);
 
   return 0;
 }
